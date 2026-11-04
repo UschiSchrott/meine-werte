@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Meine Werte">
+<meta name="theme-color" content="#f2f2f7">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-src blob:; object-src blob:; connect-src 'self' data: blob:">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Meine Werte</title>
+<style>
+:root{--bg:#f2f2f7;--card:#fff;--tx:#1c1c1e;--tx2:#6e6e73;--sep:#e5e5ea;--blue:#2b4fd8;--pink:#ff3d8b;--orange:#ff9500;--green:#28a745;--red:#e5383b;--yel:#f5a623}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+main{padding:calc(env(safe-area-inset-top) + 8px) 16px calc(96px + env(safe-area-inset-bottom));max-width:700px;margin:0 auto}
+h1{font-size:34px;font-weight:800;letter-spacing:-.5px;margin:18px 4px 4px}
+.sub{color:var(--tx2);font-size:15px;margin:0 4px 14px}
+h2{font-size:22px;font-weight:700;margin:24px 4px 8px}
+h3{font-size:13px;text-transform:uppercase;color:var(--tx2);font-weight:600;margin:22px 16px 6px;letter-spacing:.3px}
+.card{background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.list{background:var(--card);border-radius:14px;overflow:hidden;margin-bottom:12px}
+.row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--sep);min-height:52px}
+.row:last-child{border-bottom:0}.row.tap{cursor:pointer}.row.tap:active{background:#f0f0f5}
+.grow{flex:1;min-width:0}.nm{font-weight:600}.mt{color:var(--tx2);font-size:13px}
+.val{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px}
+.s-low{background:#e6ecff;color:var(--blue)}.s-high{background:#ffe6ef;color:#d81b60}.s-ok{background:#e3f6e8;color:#1e7b34}.s-na{background:#eee;color:#777}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{background:var(--card);border-radius:14px;padding:12px;min-width:0}
+.tile .nm{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .big{font-size:24px;font-weight:800;margin:2px 0}
+.tile .big small{font-size:13px;color:var(--tx2);font-weight:500}
+.stats{display:flex;gap:10px;margin-bottom:12px}.stats .tile{flex:1;text-align:center}.stats .big{font-size:28px}
+button,.btn{font:inherit;border:0;border-radius:12px;padding:12px 16px;font-weight:600;background:var(--blue);color:#fff;cursor:pointer}
+.btn2{background:#e8ecfb;color:var(--blue)}.btnp{background:var(--pink)}.btno{background:var(--orange)}.btnd{background:#ffe5e5;color:var(--red)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}.full{width:100%;display:block;margin-top:8px}
+.fab{position:fixed;right:20px;bottom:calc(84px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:28px;font-size:30px;line-height:56px;padding:0;background:linear-gradient(135deg,var(--pink),var(--blue));box-shadow:0 6px 18px rgba(43,79,216,.35);z-index:5}
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(249,249,251,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid #d8d8dd;display:flex;padding:6px 0 calc(6px + env(safe-area-inset-bottom));z-index:10}
+nav button{flex:1;background:none;color:#8e8e93;font-size:10px;font-weight:500;padding:2px 0;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button svg{width:26px;height:26px}nav button.on{color:var(--blue)}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:20;display:none;align-items:flex-end;justify-content:center}
+.sheet-bg.open{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:700px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:8px 16px calc(24px + env(safe-area-inset-bottom));animation:up .25s ease}
+@keyframes up{from{transform:translateY(40%);opacity:.5}}
+.sheet-h{display:flex;justify-content:space-between;align-items:center;padding:8px 0 4px}.sheet-h b{font-size:17px}
+.lnk{background:none;color:var(--blue);padding:8px 4px;font-weight:500}
+label.f{display:block;background:var(--card);padding:10px 14px;border-bottom:1px solid var(--sep)}
+label.f span{display:block;font-size:12px;color:var(--tx2)}
+label.f input,label.f select,label.f textarea{width:100%;border:0;font:inherit;font-size:17px;padding:4px 0;background:transparent;color:var(--tx);outline:0}
+.form{border-radius:14px;overflow:hidden;margin:10px 0}.form label.f:last-child{border-bottom:0}
+.two{display:flex}.two label{flex:1}.two label+label{border-left:1px solid var(--sep)}
+.hint{font-size:13px;color:var(--tx2);margin:4px 6px 10px}
+.ac{background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.12);margin-top:-6px;max-height:220px;overflow:auto}
+.ac div{padding:10px 14px;border-bottom:1px solid var(--sep);cursor:pointer}.ac div small{color:var(--tx2)}
+.ins{border-left:4px solid var(--blue)}.ins.warn{border-color:var(--orange)}.ins.bad{border-color:var(--pink)}.ins.ok{border-color:var(--green)}
+.ins b{display:block;margin-bottom:4px}.ins p{margin:4px 0;font-size:15px}.ins .sup{background:#fff6e8;border-radius:10px;padding:8px 10px;font-size:14px;margin-top:8px}
+.disc{background:#fff3f7;border:1px solid #ffd0e1;border-radius:14px;padding:12px 14px;font-size:14px;color:#8a1846;margin-bottom:12px}
+.seg{display:flex;background:#e3e3e8;border-radius:9px;padding:2px;margin:6px 0 14px}.seg button{flex:1;background:none;color:var(--tx);padding:7px;font-size:13px;border-radius:7px}.seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.ex{font-size:11px;font-weight:700;color:#fff;background:var(--orange);border-radius:6px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.empty{text-align:center;color:var(--tx2);padding:30px 10px}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(30,30,30,.9);color:#fff;padding:10px 18px;border-radius:20px;font-size:15px;z-index:50;display:none}
+.viewer{position:fixed;inset:0;background:#000;z-index:40;display:none;flex-direction:column}.viewer.open{display:flex}
+.viewer .bar{display:flex;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;background:#111}
+.viewer .bar button,.viewer .bar a{background:none;color:#fff;text-decoration:none;font-weight:600;padding:8px}
+.viewer .body{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center}.viewer img{max-width:100%;max-height:100%}.viewer iframe{width:100%;height:100%;border:0;background:#fff}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--blue)}
+.search{width:100%;border:0;border-radius:10px;background:#e3e3e8;padding:9px 12px;font:inherit;font-size:16px;margin-bottom:12px;outline:0}
+textarea{resize:vertical}
+</style></head><body>
+<main id="app"></main>
+<button class="fab" id="fab" aria-label="Neu">+</button>
+<nav id="nav"></nav>
+<div class="sheet-bg" id="sheetbg"><div class="sheet" id="sheet"></div></div>
+<div class="viewer" id="viewer"><div class="bar"><button onclick="closeViewer()">Schließen</button><a id="vdl" download>Sichern</a></div><div class="body" id="vbody"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+'use strict';
+// ---------- Katalog (typische Erwachsenen-Referenzbereiche, Frau ~40 J.; Labore weichen ab!) ----------
+const CAT=[
+// [key, Name, Synonyme, Einheit, unten, oben, Gruppe, Hinweis]
+['ferritin','Ferritin','eisenspeicher','ng/ml',15,150,'Eisen',''],
+['eisen','Eisen (Serum)','fe','µg/dl',50,170,'Eisen','schwankt stark im Tagesverlauf'],
+['transferrin','Transferrin','','g/l',2.0,3.6,'Eisen',''],
+['tsat','Transferrinsättigung','tsat','%',16,45,'Eisen',''],
+['hb','Hämoglobin','hb,haemoglobin','g/dl',12.0,15.5,'Blutbild',''],
+['hkt','Hämatokrit','hk','%',36,46,'Blutbild',''],
+['ery','Erythrozyten','rote blutkörperchen','Mio/µl',3.9,5.2,'Blutbild',''],
+['mcv','MCV','mittleres zellvolumen','fl',80,96,'Blutbild',''],
+['mch','MCH','hbe','pg',27,33,'Blutbild',''],
+['mchc','MCHC','','g/dl',32,36,'Blutbild',''],
+['leuko','Leukozyten','weiße blutkörperchen','Tsd/µl',4.0,10.0,'Blutbild',''],
+['thrombo','Thrombozyten','blutplättchen','Tsd/µl',150,400,'Blutbild',''],
+['tsh','TSH','basal','mU/l',0.4,4.0,'Schilddrüse','viele Fachleute sehen 0,5–2,5 als günstig an'],
+['ft3','fT3','freies t3','pg/ml',2.0,4.4,'Schilddrüse',''],
+['ft4','fT4','freies t4','ng/dl',0.93,1.7,'Schilddrüse',''],
+['antitpo','Anti-TPO (TPO-AK)','tpo,mak','IU/ml',0,34,'Schilddrüse',''],
+['antitg','Anti-Tg (TAK)','tak,thyreoglobulin-ak','IU/ml',0,115,'Schilddrüse',''],
+['trak','TRAK','tsh-rezeptor-ak','IU/l',0,1.75,'Schilddrüse',''],
+['vitd','Vitamin D (25-OH)','25-oh-d,calcidiol,vit d','ng/ml',30,100,'Vitamine','<20 Mangel, 20–30 unzureichend'],
+['b12','Vitamin B12','cobalamin','pg/ml',200,900,'Vitamine','200–400 Graubereich'],
+['holotc','Holo-Transcobalamin','holotc,aktives b12','pmol/l',50,150,'Vitamine','<35 Mangel wahrscheinlich, 35–50 Graubereich'],
+['folat','Folsäure (Serum)','folat','ng/ml',5.4,24,'Vitamine',''],
+['b6','Vitamin B6','pyridoxal','µg/l',5,30,'Vitamine',''],
+['homocystein','Homocystein','hcy','µmol/l',5,12,'Vitamine','günstig oft <10'],
+['magnesium','Magnesium (Serum)','mg','mmol/l',0.75,1.05,'Mineralstoffe','Serum zeigt Speicher nur begrenzt'],
+['zink','Zink','zn','µg/dl',70,120,'Mineralstoffe',''],
+['selen','Selen','se','µg/l',80,140,'Mineralstoffe',''],
+['kupfer','Kupfer','cu','µg/dl',70,155,'Mineralstoffe',''],
+['calcium','Calcium','kalzium,ca','mmol/l',2.15,2.6,'Elektrolyte',''],
+['kalium','Kalium','k','mmol/l',3.5,5.1,'Elektrolyte',''],
+['natrium','Natrium','na','mmol/l',135,145,'Elektrolyte',''],
+['phosphat','Phosphat','','mmol/l',0.84,1.45,'Elektrolyte',''],
+['pth','Parathormon (PTH)','parathormon','pg/ml',15,65,'Elektrolyte',''],
+['crp','CRP','c-reaktives protein','mg/l',0,5,'Entzündung',''],
+['hscrp','hs-CRP','hochsensitiv','mg/l',0,1,'Entzündung','1–3 mittleres, >3 erhöhtes Herz-Kreislauf-Risiko'],
+['bsg','BSG','blutsenkung','mm/h',0,20,'Entzündung',''],
+['hba1c','HbA1c','langzeitzucker','%',4.0,5.6,'Zucker','5,7–6,4 Prädiabetes-Bereich'],
+['glukose','Nüchternglukose','blutzucker,glucose','mg/dl',70,99,'Zucker',''],
+['insulin','Insulin (nüchtern)','','µU/ml',2,25,'Zucker','günstig oft <10'],
+['chol','Gesamtcholesterin','cholesterin','mg/dl',0,200,'Fette',''],
+['ldl','LDL-Cholesterin','ldl','mg/dl',0,116,'Fette','Zielwert hängt vom Gesamtrisiko ab'],
+['hdl','HDL-Cholesterin','hdl','mg/dl',45,999,'Fette',''],
+['trig','Triglyceride','triglyzeride,tg','mg/dl',0,150,'Fette',''],
+['lpa','Lipoprotein(a)','lp(a),lpa','nmol/l',0,75,'Fette','genetisch bestimmt, 1× im Leben messen'],
+['got','GOT (AST)','ast','U/l',0,35,'Leber',''],
+['gpt','GPT (ALT)','alt','U/l',0,35,'Leber',''],
+['ggt','Gamma-GT','ggt','U/l',0,40,'Leber',''],
+['ap','Alkalische Phosphatase','ap','U/l',35,105,'Leber',''],
+['bili','Bilirubin gesamt','','mg/dl',0.1,1.2,'Leber',''],
+['albumin','Albumin','','g/dl',3.5,5.2,'Leber',''],
+['krea','Kreatinin','creatinin','mg/dl',0.5,0.9,'Niere',''],
+['egfr','eGFR','gfr','ml/min/1,73m²',90,999,'Niere','60–89 leicht vermindert'],
+['harnstoff','Harnstoff','','mg/dl',17,43,'Niere',''],
+['harnsaeure','Harnsäure','urat','mg/dl',2.4,5.7,'Niere',''],
+['ck','CK','kreatinkinase','U/l',0,170,'Muskel',''],
+['cortisol_s','Cortisol (Serum, morgens)','kortisol','µg/dl',6.2,19.4,'Stress',''],
+['cort_m','Cortisol Speichel morgens','kortisol speichel','nmol/l',5,25,'Stress','sehr labor-/methodenabhängig'],
+['cort_mi','Cortisol Speichel mittags','','nmol/l',2,10,'Stress','sehr labor-/methodenabhängig'],
+['cort_a','Cortisol Speichel abends','','nmol/l',1,5,'Stress','sehr labor-/methodenabhängig'],
+['cort_n','Cortisol Speichel nachts','','nmol/l',0.3,2.5,'Stress','sehr labor-/methodenabhängig'],
+['melatonin','Melatonin Speichel (nachts)','','pg/ml',10,40,'Stress','sehr labor-/methodenabhängig'],
+['dheas','DHEA-S','dhea','µg/dl',60,340,'Hormone','altersabhängig'],
+['oestradiol','Östradiol','estradiol,e2','pg/ml',30,400,'Hormone','stark zyklusabhängig'],
+['progesteron','Progesteron','','ng/ml',5,25,'Hormone','Bereich gilt für Lutealphase (ca. Tag 19–23)'],
+['testosteron','Testosteron','','ng/ml',0.08,0.48,'Hormone',''],
+['shbg','SHBG','','nmol/l',26,110,'Hormone',''],
+['fsh','FSH','','mU/ml',3.5,12.5,'Hormone','Follikelphase; zyklusabhängig'],
+['lh','LH','','mU/ml',2.4,12.6,'Hormone','Follikelphase; zyklusabhängig'],
+['prolaktin','Prolaktin','','ng/ml',4.8,23.3,'Hormone',''],
+['amh','AMH','anti-müller-hormon','ng/ml',0.5,6,'Hormone','altersabhängig'],
+['omega3','Omega-3-Index','','%',8,11,'Fettsäuren','Zielbereich 8–11 %'],
+['aaepa','AA/EPA-Quotient','','',1.5,3,'Fettsäuren','Zielbereich ca. 1,5–3']
+].map(a=>({key:a[0],name:a[1],syn:a[2],unit:a[3],lo:a[4],hi:a[5],grp:a[6],note:a[7]}));
+const CK=Object.fromEntries(CAT.map(c=>[c.key,c]));
+const FCATS=['Blutbild/Labor (Text)','Röntgen','Knochendichte (DXA)','Ultraschall','MRT','CT','EKG','Arztbrief','Gynäkologie','Haut','Augen','Zahn','Sonstiges'];
+
+// ---------- IndexedDB ----------
+let DB;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('meinewerte',1);r.onupgradeneeded=()=>{const d=r.result;['values','findings','questions'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'})})};r.onsuccess=()=>{DB=r.result;res()};r.onerror=()=>rej(r.error)})}
+function tx(s,m='readonly'){return DB.transaction(s,m).objectStore(s)}
+function all(s){return new Promise((res,rej)=>{const r=tx(s).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function put(s,o){return new Promise((res,rej)=>{const r=tx(s,'readwrite').put(o);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function del(s,id){return new Promise((res,rej)=>{const r=tx(s,'readwrite').delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+let S={values:[],findings:[],questions:[]};
+async function load(){for(const k of ['values','findings','questions'])S[k]=await all(k)}
+
+// ---------- Helfer ----------
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>{if(v===''||v==null)return null;const n=parseFloat(String(v).replace(',','.'));return isNaN(n)?null:n};
+const fmt=n=>n==null?'–':String(+(+n).toFixed(3)).replace('.',',');
+const fdate=d=>d?new Date(d+'T12:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+const today=()=>new Date().toISOString().slice(0,10);
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2200)}
+const norm=s=>String(s||'').toLowerCase().trim();
+function findCat(name){const n=norm(name);return CAT.find(c=>norm(c.name)===n||c.syn.split(',').some(x=>x&&norm(x)===n))||null}
+function range(v){const c=CK[v.key];const lo=num(v.refLow),hi=num(v.refHigh);
+  if(lo!=null||hi!=null)return{lo,hi,own:true};
+  if(c&&norm(c.unit)===norm(v.unit))return{lo:c.lo,hi:c.hi,own:false};
+  return null}
+function status(v){const r=range(v);if(!r)return'na';if(r.lo!=null&&v.value<r.lo)return'low';if(r.hi!=null&&v.value>r.hi)return'high';return'ok'}
+const SL={low:'niedrig',high:'hoch',ok:'normal',na:'ohne Ref.'};const SC={low:'var(--blue)',high:'var(--pink)',ok:'var(--green)',na:'#aaa'};
+function rtxt(v){const r=range(v);if(!r)return'kein Referenzbereich';const a=r.lo!=null&&r.lo>0?fmt(r.lo):null,b=r.hi!=null&&r.hi<999?fmt(r.hi):null;return (a&&b?a+'–'+b:a?'≥ '+a:b?'≤ '+b:'')+' '+(v.unit||'')+(r.own?' (Labor)':' (typisch)')}
+function groups(){const g={};for(const v of S.values){const k=v.key||('x:'+norm(v.name));(g[k]=g[k]||[]).push(v)}for(const k in g)g[k].sort((a,b)=>a.date<b.date?-1:1);return g}
+function latest(){return Object.values(groups()).map(a=>a[a.length-1])}
+function spark(arr,w=120,h=34){const vs=arr.map(v=>v.value);if(vs.length<2)return'';const r=range(arr[arr.length-1]);let mn=Math.min(...vs),mx=Math.max(...vs);
+ if(r){if(r.lo!=null&&r.lo>0)mn=Math.min(mn,r.lo);if(r.hi!=null&&r.hi<999)mx=Math.max(mx,r.hi)}if(mx===mn){mx+=1;mn-=1}
+ const X=i=>4+i*(w-8)/(vs.length-1),Y=v=>h-4-(v-mn)*(h-8)/(mx-mn);
+ let band='';if(r&&(r.lo!=null||r.hi!=null)){const y1=Y(r.hi!=null&&r.hi<999?r.hi:mx),y2=Y(r.lo!=null?Math.max(r.lo,mn):mn);band=`<rect x="0" y="${y1}" width="${w}" height="${Math.max(0,y2-y1)}" fill="#28a745" opacity=".1"/>`}
+ const pts=vs.map((v,i)=>X(i)+','+Y(v)).join(' ');
+ return `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:${h}px;display:block">${band}<polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>${arr.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v.value)}" r="2.6" fill="${SC[status(v)]}"/>`).join('')}</svg>`}
+
+// ---------- Navigation ----------
+const IC={
+home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>',
+vals:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7 15h10"/></svg>',
+find:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>',
+ana:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4L7 18l-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg>',
+q:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M10 9.5a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.2v.5M12 16h.01"/></svg>'};
+const TABS=[['home','Übersicht'],['vals','Werte'],['find','Befunde'],['ana','Auswertung'],['q','Fragen']];
+let tab='home',sub=null;
+function renderNav(){$('#nav').innerHTML=TABS.map(([k,l])=>`<button data-tab="${k}" class="${tab===k?'on':''}">${IC[k]}${l}</button>`).join('');
+ $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;sub=null;render();scrollTo(0,0)})}
+function render(){renderNav();const f={home:vHome,vals:vVals,find:vFind,ana:vAna,q:vQ}[tab];$('#app').innerHTML=f();bind();
+ $('#fab').style.display=(tab==='vals'||tab==='home'||tab==='find')?'block':'none'}
+$('#fab').onclick=()=>tab==='find'?formFinding():formValue();
+
+// ---------- Übersicht ----------
+function vHome(){const L=latest(),g=groups();const c={low:0,high:0,ok:0};L.forEach(v=>{const s=status(v);if(c[s]!=null)c[s]++});
+ const ex=S.values.some(v=>v.example)||S.findings.some(v=>v.example);
+ let h=`<h1>Übersicht</h1><p class="sub">${new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}${ex?' <span class="ex">BEISPIELDATEN AKTIV</span>':''}</p>`;
+ if(!S.values.length&&!S.findings.length){h+=`<div class="card"><b>Willkommen 👋</b><p style="margin:6px 0 10px;font-size:15px">Hier sammelst du Laborwerte und Befunde all deiner Ärztinnen und Ärzte – nur auf diesem Gerät gespeichert. Tippe auf <b>+</b>, um den ersten Wert einzutragen, oder probiere die App mit Beispieldaten aus.</p><button class="btno full" data-act="loadex">Beispieldaten laden</button></div>`}
+ else{h+=`<div class="stats"><div class="tile"><div class="big" style="color:var(--blue)">${c.low}</div><div class="mt">niedrig</div></div><div class="tile"><div class="big" style="color:var(--green)">${c.ok}</div><div class="mt">normal</div></div><div class="tile"><div class="big" style="color:var(--pink)">${c.high}</div><div class="mt">hoch</div></div></div>`;
+ const ord={high:0,low:0,na:1,ok:2};const sorted=L.slice().sort((a,b)=>ord[status(a)]-ord[status(b)]||String(a.name).localeCompare(b.name));
+ h+=`<h2>Aktuelle Werte</h2><div class="grid">`+sorted.map(v=>{const s=status(v),k=v.key||('x:'+norm(v.name));return `<div class="tile tap" data-marker="${esc(k)}"><div class="nm">${esc(v.name)}</div><div class="big" style="color:${s==='ok'?'var(--tx)':SC[s]}">${fmt(v.value)} <small>${esc(v.unit)}</small></div><span class="pill s-${s}">${SL[s]}</span> <span class="mt">${fdate(v.date)}</span>${spark(g[k])||'<div style="height:34px"></div>'}</div>`}).join('')+`</div>`;}
+ h+=`<h3>Daten &amp; Sicherung</h3><div class="list">
+ <div class="row tap" data-act="dagmar"><div class="grow"><div class="nm">📋 Für Dagmar kopieren</div><div class="mt">Textzusammenfassung aller Werte & Befunde</div></div></div>
+ <div class="row tap" data-act="export"><div class="grow"><div class="nm">⬇️ Backup exportieren (JSON)</div><div class="mt">inkl. Anhänge</div></div></div>
+ <div class="row tap" data-act="import"><div class="grow"><div class="nm">⬆️ Backup importieren</div><div class="mt">ergänzt/überschreibt gleiche Einträge</div></div></div>
+ <div class="row tap" data-act="loadex"><div class="grow"><div class="nm">🧪 Beispieldaten laden</div><div class="mt">deutlich als „Beispiel“ markiert</div></div></div>
+ <div class="row tap" data-act="delex"><div class="grow"><div class="nm" style="color:var(--red)">Beispieldaten löschen</div></div></div>
+ <div class="row tap" data-act="delall"><div class="grow"><div class="nm" style="color:var(--red)">Alle Daten löschen</div></div></div></div>
+ <p class="hint">🔒 Alle Daten bleiben ausschließlich auf diesem Gerät (IndexedDB). Keine Server, kein Tracking. Tipp: regelmäßig ein Backup exportieren – wenn Safari die Website-Daten löscht, sind sonst auch die Werte weg.</p>
+ <input type="file" id="impf" accept="application/json,.json" style="display:none">`;
+ return h}
+
+// ---------- Werte ----------
+let q='';
+function vVals(){const g=groups();
+ if(sub){const arr=g[sub]||[];if(!arr.length){sub=null;return vVals()}const L=arr[arr.length-1],c=CK[L.key];
+  return `<button class="lnk" data-act="back">‹ Werte</button><h1>${esc(L.name)}</h1><p class="sub">${c?esc(c.grp)+(c.note?' · '+esc(c.note):''):'eigener Marker'}</p>
+  <div class="card">${spark(arr,300,120)||'<p class="mt">Ab zwei Messungen erscheint hier ein Verlauf.</p>'}<p class="mt" style="margin:8px 0 0">Referenz: ${esc(rtxt(L))}</p></div>
+  <div class="list">${arr.slice().reverse().map(v=>{const s=status(v);return `<div class="row tap" data-edit="${v.id}"><span class="dot" style="background:${SC[s]}"></span><div class="grow"><div class="nm">${fdate(v.date)}${v.example?'<span class="ex">Beispiel</span>':''}</div><div class="mt">${esc(v.lab||'')}${v.note?' · '+esc(v.note):''}</div></div><div class="val">${fmt(v.value)} <span class="mt">${esc(v.unit)}</span><br><span class="pill s-${s}">${SL[s]}</span></div></div>`}).join('')}</div>
+  <button class="btn2 full" data-act="addsame" data-name="${esc(L.name)}">+ Neuer ${esc(L.name)}-Wert</button>`}
+ const keys=Object.keys(g).filter(k=>!q||norm(g[k][0].name).includes(norm(q))).sort((a,b)=>{const A=CK[g[a][0].key],B=CK[g[b][0].key];return ((A?.grp||'zz')+g[a][0].name).localeCompare((B?.grp||'zz')+g[b][0].name)});
+ let h=`<h1>Werte</h1><p class="sub">${S.values.length} Messungen · ${Object.keys(g).length} Marker</p><input class="search" id="qs" placeholder="Suchen" value="${esc(q)}">`;
+ if(!keys.length)return h+`<div class="empty">Noch keine Werte.<br>Tippe auf <b>+</b>.</div>`;
+ let grp=null;h+='';let out='';
+ for(const k of keys){const arr=g[k],L=arr[arr.length-1],s=status(L),gr=CK[L.key]?.grp||'Eigene Marker';
+  if(gr!==grp){if(grp!==null)out+='</div>';out+=`<h3>${esc(gr)}</h3><div class="list">`;grp=gr}
+  out+=`<div class="row tap" data-marker="${esc(k)}"><span class="dot" style="background:${SC[s]}"></span><div class="grow"><div class="nm">${esc(L.name)}</div><div class="mt">${fdate(L.date)} · ${arr.length}× gemessen</div></div><div class="val">${fmt(L.value)} <span class="mt">${esc(L.unit)}</span></div></div>`}
+ return h+out+'</div>'}
+
+function formValue(v,preName){const e=v||{};const isNew=!v;
+ openSheet(`<div class="sheet-h"><button class="lnk" data-act="close">Abbrechen</button><b>${isNew?'Neuer Wert':'Wert bearbeiten'}</b><button class="lnk" style="font-weight:700" id="sv">Sichern</button></div>
+ <div class="form"><label class="f"><span>Test / Marker</span><input id="fn" autocomplete="off" placeholder="z. B. Ferritin" value="${esc(e.name||preName||'')}"></label></div><div id="ac"></div>
+ <div class="form"><div class="two"><label class="f"><span>Wert</span><input id="fv" inputmode="decimal" value="${e.value!=null?fmt(e.value):''}"></label><label class="f"><span>Einheit</span><input id="fu" value="${esc(e.unit||'')}"></label></div>
+ <label class="f"><span>Datum</span><input id="fd" type="date" value="${e.date||today()}"></label>
+ <label class="f"><span>Ärztin / Labor</span><input id="fl" list="labs" value="${esc(e.lab||'')}"></label>
+ <label class="f"><span>Notiz</span><input id="fo" placeholder="z. B. nüchtern, Zyklustag 21" value="${esc(e.note||'')}"></label></div>
+ <div class="form"><div class="two"><label class="f"><span>Ref. unten (Labor)</span><input id="rl" inputmode="decimal" value="${e.refLow!=null?fmt(e.refLow):''}"></label><label class="f"><span>Ref. oben (Labor)</span><input id="rh" inputmode="decimal" value="${e.refHigh!=null?fmt(e.refHigh):''}"></label></div></div>
+ <p class="hint" id="rinfo"></p>
+ <datalist id="labs">${[...new Set(S.values.map(x=>x.lab).concat(S.findings.map(x=>x.doctor)).filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
+ ${isNew?'':'<button class="btnd full" id="dl">Eintrag löschen</button>'}`);
+ const fn=$('#fn'),fu=$('#fu');
+ const info=()=>{const c=findCat(fn.value);$('#rinfo').innerHTML=c?`Typischer Bereich (Erwachsene, Frau): <b>${fmt(c.lo)}${c.hi<999?'–'+fmt(c.hi):'+'} ${esc(c.unit)}</b>${c.note?' · '+esc(c.note):''}<br>Labore haben eigene Bereiche – trage den Bereich vom Befund ein, falls er abweicht oder die Einheit anders ist.`:'Eigener Marker: bitte Referenzbereich des Labors eintragen, damit der Status berechnet werden kann.'};
+ fn.oninput=()=>{const n=norm(fn.value);const m=n?CAT.filter(c=>norm(c.name).includes(n)||c.syn.split(',').some(x=>x&&norm(x).includes(n))).slice(0,8):[];
+  $('#ac').innerHTML=m.length?'<div class="ac">'+m.map(c=>`<div data-k="${c.key}">${esc(c.name)} <small>${esc(c.unit)} · ${esc(c.grp)}</small></div>`).join('')+'</div>':'';
+  $('#ac').querySelectorAll('[data-k]').forEach(d=>d.onclick=()=>{const c=CK[d.dataset.k];fn.value=c.name;fu.value=c.unit;$('#ac').innerHTML='';info();$('#fv').focus()});info()};
+ info();if(!e.unit&&preName){const c=findCat(preName);if(c)fu.value=c.unit}
+ $('#sv').onclick=async()=>{const name=fn.value.trim(),val=num($('#fv').value);if(!name||val==null){toast('Bitte Marker und Zahlenwert eingeben');return}
+  const c=findCat(name);const o={id:e.id||uid(),key:c?c.key:null,name:c?c.name:name,value:val,unit:fu.value.trim()||(c?c.unit:''),date:$('#fd').value||today(),lab:$('#fl').value.trim(),note:$('#fo').value.trim(),refLow:num($('#rl').value),refHigh:num($('#rh').value),example:!!e.example};
+  await put('values',o);await load();closeSheet();toast('Gespeichert');render()};
+ if(!isNew)$('#dl').onclick=async()=>{if(confirm('Diesen Wert löschen?')){await del('values',e.id);await load();closeSheet();render()}}}
+
+// ---------- Befunde ----------
+function vFind(){const F=S.findings.slice().sort((a,b)=>a.date<b.date?1:-1);
+ let h=`<h1>Befunde</h1><p class="sub">${F.length} Einträge</p>`;if(!F.length)return h+`<div class="empty">Noch keine Befunde.<br>Röntgen, Ultraschall, Knochendichte, Arztbriefe … mit Foto oder PDF.</div>`;
+ return h+F.map(f=>`<div class="card tap" data-fedit="${f.id}"><div class="mt">${fdate(f.date)} · ${esc(f.category)}${f.example?'<span class="ex">Beispiel</span>':''}</div><div class="nm" style="margin:2px 0">${esc(f.title||f.category)}</div><div class="mt">${esc(f.doctor||'')}</div>${f.text?`<p style="margin:6px 0 0;font-size:15px;white-space:pre-wrap">${esc(f.text.length>220?f.text.slice(0,220)+'…':f.text)}</p>`:''}${f.file?`<button class="btn2" style="margin-top:8px;padding:8px 12px;font-size:14px" data-view="${f.id}">📎 ${esc(f.fileName||'Anhang')} ansehen</button>`:''}</div>`).join('')}
+function formFinding(f){const e=f||{};const isNew=!f;let file=e.file||null,fileName=e.fileName||'',fileType=e.fileType||'';
+ openSheet(`<div class="sheet-h"><button class="lnk" data-act="close">Abbrechen</button><b>${isNew?'Neuer Befund':'Befund bearbeiten'}</b><button class="lnk" style="font-weight:700" id="sv">Sichern</button></div>
+ <div class="form"><label class="f"><span>Kategorie</span><select id="bc">${FCATS.map(c=>`<option ${c===e.category?'selected':''}>${c}</option>`).join('')}</select></label>
+ <label class="f"><span>Titel</span><input id="bt" placeholder="z. B. Knochendichte LWS/Hüfte" value="${esc(e.title||'')}"></label>
+ <label class="f"><span>Datum</span><input id="bd" type="date" value="${e.date||today()}"></label>
+ <label class="f"><span>Ärztin / Praxis</span><input id="bdr" value="${esc(e.doctor||'')}"></label>
+ <label class="f"><span>Befundtext / Ergebnis</span><textarea id="bx" rows="6" placeholder="Beurteilung, Messwerte (z. B. T-Score), Empfehlung …">${esc(e.text||'')}</textarea></label></div>
+ <div class="card"><div class="nm">Anhang (Foto oder PDF)</div><div class="mt" id="fi">${fileName?esc(fileName):'kein Anhang'}</div><div class="btns" style="margin-top:8px"><label class="btn btn2" style="display:inline-block">Datei wählen<input type="file" id="bf" accept="image/*,application/pdf" style="display:none"></label>${fileName?'<button class="btnd" id="brm">Entfernen</button>':''}</div><p class="hint" style="margin:6px 0 0">Wird nur lokal gespeichert.</p></div>
+ ${isNew?'':'<button class="btnd full" id="dl">Befund löschen</button>'}`);
+ $('#bf').onchange=ev=>{const x=ev.target.files[0];if(!x)return;file=x;fileName=x.name;fileType=x.type;$('#fi').textContent=x.name+' ('+Math.round(x.size/1024)+' KB)'};
+ if($('#brm'))$('#brm').onclick=()=>{file=null;fileName='';fileType='';$('#fi').textContent='kein Anhang'};
+ $('#sv').onclick=async()=>{const o={id:e.id||uid(),category:$('#bc').value,title:$('#bt').value.trim(),date:$('#bd').value||today(),doctor:$('#bdr').value.trim(),text:$('#bx').value.trim(),file,fileName,fileType,example:!!e.example};
+  if(!o.title&&!o.text&&!file){toast('Bitte Titel, Text oder Anhang angeben');return}
+  if(file&&!(file instanceof Blob)){o.file=null}
+  await put('findings',o);await load();closeSheet();toast('Gespeichert');render()};
+ if(!isNew)$('#dl').onclick=async()=>{if(confirm('Diesen Befund löschen?')){await del('findings',e.id);await load();closeSheet();render()}}}
+let vurl=null;function viewFile(f){if(!f.file)return;vurl&&URL.revokeObjectURL(vurl);vurl=URL.createObjectURL(f.file);const b=$('#vbody');
+ b.innerHTML=(f.fileType||'').startsWith('image/')?`<img src="${vurl}" alt="">`:`<iframe src="${vurl}"></iframe>`;$('#vdl').href=vurl;$('#vdl').download=f.fileName||'anhang';$('#viewer').classList.add('open')}
+function closeViewer(){$('#viewer').classList.remove('open');$('#vbody').innerHTML=''}
+
+// ---------- Regelbasierte Auswertung ----------
+function analyse(){const g=groups(),L={};for(const k in g)if(CK[k])L[k]=g[k][g[k].length-1];
+ const has=k=>!!L[k],st=k=>L[k]?status(L[k]):null;
+ const v=k=>(L[k]&&norm(L[k].unit)===norm(CK[k].unit))?L[k].value:null; // Zahl nur bei Katalog-Einheit
+ const lowish=k=>st(k)==='low',high=k=>st(k)==='high';
+ const R={flags:[],patterns:[],defs:[],tests:[],questions:[]};
+ const P=(lvl,title,text,qs)=>{R.patterns.push({lvl,title,text});if(qs)R.questions.push(qs)};
+ const D=(title,text,sup,qs)=>{R.defs.push({title,text,sup});if(qs)R.questions.push(qs)};
+ const T=(title,text)=>{if(!R.tests.some(t=>t.title===title))R.tests.push({title,text})};
+ // 1 Auffällige Werte
+ for(const x of latest()){const s=status(x);if(s==='low'||s==='high')R.flags.push({x,s})}
+ // Eisen
+ const fer=v('ferritin');
+ if(lowish('ferritin')||(fer!=null&&fer<30)){if(lowish('hb')||lowish('mcv'))P('bad','Eisenmangel(-anämie) möglich','Ferritin niedrig zusammen mit niedrigem Hämoglobin/MCV passt zu einem Eisenmangel mit Auswirkung auf die Blutbildung.','Kann ein Eisenmangel mit Blutarmut vorliegen – und was ist die Ursache (z. B. Blutungen, Aufnahme)?');
+  D('Eisenspeicher niedrig',fer!=null&&fer>=15?'Ferritin unter 30 ng/ml gilt oft schon als leerer Speicher (z. B. Müdigkeit, Haarausfall).':'Ferritin unter dem Referenzbereich.','Eisen (z. B. Eisen-II-bisglycinat oder nach ärztlicher Verordnung), mit Vitamin C, nicht zu Kaffee/Tee/Milch; Dosis und Kontrolle ärztlich festlegen.','Sollte ich Eisen einnehmen – in welcher Dosis und wann wird Ferritin kontrolliert?')}
+ if(has('ferritin')&&!lowish('ferritin')&&(high('crp')||high('hscrp')))P('warn','Ferritin bei Entzündung schwer beurteilbar','Ferritin steigt bei Entzündungen (Akute-Phase-Protein). Ein erhöhtes CRP kann einen Eisenmangel verdecken.','Ist mein Ferritin wegen des erhöhten CRP aussagekräftig? Sollte die Transferrinsättigung bestimmt werden?');
+ if(high('ferritin')&&high('tsat'))P('bad','Eisenüberladung abklären','Ferritin und Transferrinsättigung erhöht: an Hämochromatose (erbliche Veranlagung) denken.','Sollte ein HFE-Gentest (Hämochromatose) gemacht werden?');
+ else if(high('ferritin'))P('warn','Ferritin erhöht','Mögliche Ursachen: Entzündung, Leberbelastung, Stoffwechsel, selten Eisenüberladung.','Woher könnte das erhöhte Ferritin kommen?');
+ if(lowish('tsat')&&!lowish('ferritin')&&has('ferritin'))P('info','Transferrinsättigung niedrig','Wenig verfügbares Eisen trotz normalem Ferritin – z. B. bei Entzündung oder beginnendem Mangel.');
+ // Blutbild
+ if(high('mcv')&&(lowish('b12')||lowish('holotc')||lowish('folat')))P('bad','Große rote Blutkörperchen + B12/Folat niedrig','Erhöhtes MCV mit niedrigem B12/Folat passt zu einer B-Vitamin-bedingten Blutbildungsstörung.','Brauche ich B12/Folsäure – oral oder als Spritze?');
+ else if(high('mcv'))T('Vitamin B12 / Holo-TC und Folsäure','MCV ist erhöht – B12 und Folat helfen bei der Einordnung.');
+ if(lowish('mcv')&&!lowish('ferritin')&&has('ferritin'))P('info','Kleine rote Blutkörperchen bei normalem Ferritin','Selten auch anlagebedingt (z. B. Thalassämie-Trait) – ggf. Hb-Elektrophorese besprechen.');
+ if(lowish('hb')&&!has('ferritin'))T('Ferritin','Hämoglobin ist niedrig – Ferritin zeigt, ob Eisenmangel die Ursache sein könnte.');
+ // B-Vitamine
+ if(high('homocystein')&&(lowish('b12')||lowish('holotc')||lowish('folat')||lowish('b6')))P('bad','Homocystein erhöht bei niedrigem B12/Folat/B6','Typisches Muster eines B-Vitamin-Defizits im Methylierungsstoffwechsel.','Sollten B12, Folat und B6 ergänzt und Homocystein danach kontrolliert werden?');
+ else if(high('homocystein')){P('warn','Homocystein erhöht','Kann durch B12-, Folat- oder B6-Mangel, Nierenfunktion oder genetische Varianten (z. B. MTHFR) bedingt sein.','Woran liegt das erhöhte Homocystein – ist eine MTHFR-Variante relevant?');['holotc','folat','b6'].forEach(k=>!has(k)&&T(CK[k].name,'Zur Einordnung des erhöhten Homocysteins.'))}
+ if(lowish('b12')||lowish('holotc')||(v('holotc')!=null&&v('holotc')<35))D('Vitamin-B12-Status niedrig','Mögliche Folgen: Müdigkeit, Kribbeln, Konzentration. Ursachen: Ernährung, Magen (z. B. Gastritis, Säureblocker), Metformin.','Vitamin B12 (z. B. Methyl-/Adenosylcobalamin oder Hydroxocobalamin) – oral hochdosiert oder als Spritze, je nach Ursache ärztlich klären.','Was ist die Ursache meines niedrigen B12 und wie soll ich es auffüllen?');
+ else if(v('b12')!=null&&v('b12')<400&&!has('holotc'))T('Holo-Transcobalamin (aktives B12)','Serum-B12 liegt im Graubereich (200–400 pg/ml); Holo-TC zeigt den tatsächlichen Versorgungsstatus besser.');
+ if(lowish('folat'))D('Folat niedrig','Wichtig für Blutbildung und Homocystein-Abbau.','Folsäure oder aktives Folat (5-MTHF), oft zusammen mit B12 – nie nur Folat bei ungeklärtem B12-Mangel.','Soll ich Folat (5-MTHF) zusammen mit B12 nehmen?');
+ // Vitamin D
+ const vd=v('vitd');
+ if(vd!=null&&vd<20)D('Vitamin-D-Mangel','25-OH-Vitamin D unter 20 ng/ml gilt als Mangel (Knochen, Muskeln, Immunsystem).','Vitamin D3, ggf. mit Vitamin K2; Aufsättigungs- und Erhaltungsdosis ärztlich festlegen, Kontrolle nach ~3 Monaten.','Wie hoch soll ich Vitamin D dosieren und wann kontrollieren wir?');
+ else if(vd!=null&&vd<30)D('Vitamin D unzureichend','20–30 ng/ml gilt als suboptimal.','Vitamin D3 (Erhaltungsdosis), im Winter besonders sinnvoll; Dosis besprechen.','Ist eine Vitamin-D-Ergänzung für mich sinnvoll?');
+ if(vd!=null&&vd>100)P('bad','Vitamin D sehr hoch','Über 100 ng/ml: Überdosierung möglich – Calcium kontrollieren, Einnahme überprüfen.','Muss ich meine Vitamin-D-Dosis reduzieren?');
+ if((vd!=null&&vd<30)&&!has('calcium'))T('Calcium (und ggf. PTH)','Bei niedrigem Vitamin D hilft Calcium/PTH zur Einordnung des Knochenstoffwechsels.');
+ // Schilddrüse
+ if(high('tsh')&&high('antitpo'))P('bad','Hinweis auf Autoimmunthyreoiditis (Hashimoto) – abklären','Erhöhtes TSH mit erhöhten TPO-Antikörpern ist das typische Muster. Ultraschall der Schilddrüse und fT4 helfen.','Habe ich Hashimoto? Brauche ich L-Thyroxin und einen Schilddrüsen-Ultraschall?');
+ else if(high('antitpo'))P('warn','TPO-Antikörper erhöht','Kann auf eine Autoimmunreaktion der Schilddrüse hindeuten, auch bei (noch) normalem TSH. Familiäre Veranlagung möglich.','Wie oft sollen TSH und Antikörper kontrolliert werden?');
+ if(high('tsh')&&lowish('ft4'))P('bad','Schilddrüsenunterfunktion möglich','TSH hoch und fT4 niedrig passt zu einer Unterfunktion.','Liegt eine Unterfunktion vor, die behandelt werden sollte?');
+ else if(high('tsh')&&!lowish('ft4'))P('warn','TSH erhöht','Bei normalem fT4 evtl. latente Unterfunktion – Kontrolle empfohlen.');
+ if(lowish('tsh')&&(high('ft4')||high('ft3')))P('bad','Schilddrüsenüberfunktion möglich','TSH niedrig mit erhöhten freien Hormonen – TRAK (Morbus Basedow) und Ultraschall abklären.','Sollte TRAK bestimmt werden?');
+ const tsh=v('tsh');if(tsh!=null&&tsh>2.5&&!high('tsh'))P('info','TSH im oberen Normalbereich','Manche Fachleute betrachten TSH >2,5 mU/l bei Beschwerden genauer (fT3/fT4, Antikörper).');
+ if(has('tsh')&&!has('ft4'))T('fT4 (und fT3)','TSH allein zeigt nicht, wie viel Schilddrüsenhormon tatsächlich vorhanden ist.');
+ if(has('tsh')&&!has('antitpo'))T('Anti-TPO (TPO-Antikörper)','Einmalig sinnvoll, um eine Autoimmun-Schilddrüse (Hashimoto) zu erkennen – besonders bei Frauen ab 40.');
+ if(lowish('ft3')&&!high('tsh')&&!lowish('ft4'))P('info','fT3 niedrig bei normalem TSH/fT4','Kann auf eine verminderte Umwandlung T4→T3 hindeuten (z. B. Stress, Kaloriendefizit, Selen-/Zinkstatus).');
+ if(high('antitpo')&&!has('selen'))T('Selen','Bei erhöhten TPO-Antikörpern wird Selen häufig diskutiert – Status vorher messen.');
+ // Mineralstoffe
+ if(lowish('magnesium'))D('Magnesium niedrig','Im Serum niedrig bedeutet meist schon deutlicher Mangel (Krämpfe, Unruhe, Schlaf).','Magnesium (z. B. Citrat/Bisglycinat, abends), Dosis wegen Verträglichkeit/Nierenfunktion besprechen.','Soll ich Magnesium nehmen?');
+ if(lowish('zink'))D('Zink niedrig','Wichtig für Immunsystem, Haut, Haare, Schilddrüse.','Zink (z. B. Bisglycinat) zeitlich begrenzt; bei längerer Einnahme Kupfer beachten.','Wie lange soll ich Zink nehmen?');
+ if(lowish('selen'))D('Selen niedrig','Selen ist wichtig für Schilddrüse und antioxidativen Schutz.','Selen (z. B. Selenomethionin) – geringe therapeutische Breite, nur nach Messung und Absprache, Kontrolle.','Ist Selen für meine Schilddrüse sinnvoll?');
+ if(high('calcium'))P('bad','Calcium erhöht','Parathormon (PTH) und Vitamin D bestimmen lassen (Nebenschilddrüse?).','Sollte Parathormon bestimmt werden?');
+ if(high('calcium')&&!has('pth'))T('Parathormon (PTH)','Zur Abklärung des erhöhten Calciums.');
+ if(high('kalium')||lowish('kalium'))P('warn','Kalium außerhalb des Bereichs','Kann z. B. durch Medikamente, Nierenfunktion oder Probenverarbeitung (Hämolyse) bedingt sein – oft Kontrolle sinnvoll.','Muss Kalium kontrolliert werden?');
+ if(lowish('natrium')||high('natrium'))P('warn','Natrium außerhalb des Bereichs','Häufig medikamenten- oder trinkmengenbedingt – ärztlich einordnen lassen.');
+ // Entzündung
+ if(high('crp'))P('warn','Entzündungswert erhöht (CRP)','Kann auf eine akute Infektion oder Entzündung hinweisen; bei Infekt zur Blutentnahme nach Genesung wiederholen.','Woher kommt das erhöhte CRP – soll es kontrolliert werden?');
+ const hs=v('hscrp');if(hs!=null&&hs>=1&&hs<=10)P(hs>3?'warn':'info','hs-CRP: stille Entzündung','hs-CRP '+fmt(hs)+' mg/l: '+(hs>3?'erhöhtes':'mittleres')+' Herz-Kreislauf-Risikoprofil (wenn kein akuter Infekt).');
+ if(has('ferritin')&&!has('crp')&&!has('hscrp'))T('CRP','Ferritin ist nur zusammen mit einem Entzündungswert (CRP) sicher interpretierbar.');
+ // Zucker
+ const a1=v('hba1c'),gl=v('glukose'),ins=v('insulin');
+ if((a1!=null&&a1>=6.5)||(gl!=null&&gl>=126))P('bad','Werte im Diabetes-Bereich','HbA1c ≥6,5 % oder Nüchternglukose ≥126 mg/dl – unbedingt ärztlich abklären.','Liegt ein Diabetes vor?');
+ else if((a1!=null&&a1>=5.7)||(gl!=null&&gl>=100))P('warn','Blutzucker im Prädiabetes-Bereich','Lebensstil (Bewegung, Ballaststoffe, Schlaf) wirkt hier oft gut; Insulin/HOMA-Index kann frühe Insulinresistenz zeigen.','Bin ich im Prädiabetes-Bereich – was kann ich tun?');
+ if(gl!=null&&ins!=null&&L.glukose.date===L.insulin.date){const homa=gl*ins/405;P(homa>2.5?'warn':'ok','HOMA-Index: '+fmt(+homa.toFixed(2)),homa>2.5?'Über 2,5 – Hinweis auf Insulinresistenz möglich.':'Im unauffälligen Bereich (<2,5).',homa>2.5?'Spricht mein HOMA-Index für eine Insulinresistenz?':null)}
+ else if(ins!=null&&ins>10)P('info','Nüchterninsulin erhöht/oberer Bereich','Kann auf eine beginnende Insulinresistenz hindeuten – mit Nüchternglukose am selben Tag den HOMA-Index berechnen.');
+ if((has('glukose')||has('hba1c'))&&!has('insulin'))T('Nüchterninsulin (HOMA-Index)','Zusammen mit Nüchternglukose erkennt man eine Insulinresistenz früher als mit HbA1c.');
+ if(!has('hba1c')&&!has('glukose')&&S.values.length>3)T('HbA1c','Gehört zum Basis-Check-up (Blutzucker der letzten ~3 Monate).');
+ // Fette
+ if(high('ldl')||high('chol'))P('warn','Cholesterin/LDL erhöht','Bewertung hängt vom Gesamtrisiko ab (Blutdruck, Rauchen, Familie, Lp(a)).','Wie hoch ist mein Herz-Kreislauf-Gesamtrisiko?');
+ if((has('ldl')||has('chol'))&&!has('lpa'))T('Lipoprotein(a)','Genetisch festgelegter Risikofaktor – sollte einmal im Leben gemessen werden.');
+ if(high('lpa'))P('bad','Lipoprotein(a) erhöht – genetische Veranlagung','Lp(a) ist überwiegend vererbt und ein eigenständiger Herz-Kreislauf-Risikofaktor; auch Verwandte könnten betroffen sein.','Was bedeutet mein erhöhtes Lp(a) für meine LDL-Zielwerte und meine Familie?');
+ if(high('trig')&&lowish('hdl'))P('warn','Triglyceride hoch, HDL niedrig','Typisches Muster bei Insulinresistenz/metabolischem Syndrom.','Könnte eine Insulinresistenz dahinterstecken?');
+ // Leber/Niere
+ if(high('gpt')||high('got')||high('ggt'))P('warn','Leberwerte erhöht','Mögliche Ursachen: Fettleber, Medikamente, Alkohol, Infekte, intensiver Sport (GOT). '+(high('trig')||(a1!=null&&a1>=5.7)?'Zusammen mit Stoffwechselwerten an Fettleber denken.':''),'Sollte ein Oberbauch-Ultraschall gemacht werden?');
+ const eg=v('egfr');if(high('krea')||(eg!=null&&eg<60))P('bad','Nierenfunktion eingeschränkt?','Kreatinin erhöht bzw. eGFR <60 – Kontrolle, ggf. Cystatin C und Urin-Albumin.','Ist meine Nierenfunktion eingeschränkt?');
+ else if(eg!=null&&eg<90)P('info','eGFR leicht vermindert','60–89 ml/min ist häufig altersentsprechend, bei Muskelmasse/Trinkmenge beachten.');
+ if(high('harnsaeure'))P('warn','Harnsäure erhöht','Risiko für Gicht und Stoffwechselstörungen; Ernährung (Fructose, Alkohol, Fleisch) und Trinkmenge beachten.','Muss die Harnsäure behandelt werden?');
+ // Stress/Hormone
+ if(high('cort_n')||high('cort_a'))P('warn','Cortisol am Abend/in der Nacht erhöht','Hinweis auf eine aktivierte Stressachse (z. B. Schlafprobleme, Grübeln). Tagesprofil gemeinsam interpretieren.','Wie kann ich meine Stressachse am Abend beruhigen – ist eine Kontrolle sinnvoll?');
+ if(lowish('cort_m'))P('warn','Morgen-Cortisol niedrig','Kann zu Erschöpfung und schwerem Start passen; Tagesprofil gesamt ansehen.','Was bedeutet mein niedriges Morgen-Cortisol?');
+ if(lowish('melatonin')&&(high('cort_n')||high('cort_a')))P('warn','Wenig Melatonin bei hohem Abend-Cortisol','Typisches Muster bei gestörtem Schlaf-Wach-Rhythmus: Licht am Abend, Stress.','Sind Schlafhygiene oder Melatonin für mich sinnvoll?');
+ else if(lowish('melatonin'))P('info','Melatonin niedrig','Abendliches Licht reduzieren, Morgenlicht, regelmäßige Schlafzeiten.');
+ if(lowish('dheas'))P('info','DHEA-S niedrig','Kann alters- oder stressbedingt sein; nur ärztlich begleitet ergänzen.');
+ if(lowish('progesteron'))P('warn','Progesteron niedrig','Nur aussagekräftig in der Lutealphase (ca. 7 Tage nach Eisprung). Kann in der Perimenopause typisch sein'+(has('oestradiol')&&!lowish('oestradiol')?'; zusammen mit normalem Östradiol spricht man von relativem Östrogenüberwiegen.':'.'),'Passt mein Progesteron zur Zyklusphase – ist eine Behandlung sinnvoll?');
+ const fsh=v('fsh');if(fsh!=null&&fsh>12.5)P('info','FSH erhöht','In den 40ern oft ein Zeichen der beginnenden Perimenopause (zyklusabhängig, Wiederholung sinnvoll).','Bin ich in der Perimenopause – was bedeutet das für mich?');
+ if(high('prolaktin'))P('warn','Prolaktin erhöht','Kann durch Stress, Medikamente, Schilddrüse oder selten Hypophyse bedingt sein; Wiederholung in Ruhe empfohlen.','Soll Prolaktin in Ruhe wiederholt werden?');
+ if(high('testosteron')||(lowish('shbg')&&has('testosteron')))P('warn','Androgene relativ erhöht','Hohes Testosteron oder niedriges SHBG – ggf. PCOS oder Insulinresistenz abklären.','Sollte ein PCOS oder eine Insulinresistenz abgeklärt werden?');
+ // Fettsäuren
+ const o3=v('omega3');if(o3!=null&&o3<8)D('Omega-3-Index unter Zielbereich','Ziel 8–11 %. Fettreicher Seefisch 2×/Woche oder Algenöl.','Omega-3 (EPA/DHA, z. B. Fisch- oder Algenöl), nach 3–4 Monaten erneut messen.','Wie viel Omega-3 soll ich nehmen?');
+ if(high('aaepa'))P('info','AA/EPA-Quotient erhöht','Spricht für ein eher entzündungsförderndes Fettsäureprofil.');
+ // Befunde (Text)
+ const ft=S.findings.map(f=>(f.title+' '+f.text+' '+f.category).toLowerCase()).join(' ');
+ if(/osteopenie|osteoporose|t-score\s*-?\s*[12]/.test(ft)){P('warn','Knochendichte vermindert (laut Befund)','Für die Knochen wichtig: Vitamin D, Calcium, Vitamin K2, Eiweiß, Krafttraining.','Welche Maßnahmen für meine Knochendichte (Vitamin D, Calcium, Training) – und wann Kontrolle?');['vitd','calcium'].forEach(k=>!has(k)&&T(CK[k].name,'Laut Befund ist die Knochendichte vermindert.'));if(!has('pth'))T('Parathormon (PTH)','Bei verminderter Knochendichte zur Abklärung des Calciumstoffwechsels.')}
+ if(/knoten|zyste/.test(ft))R.questions.push('Wann sollen die im Befund beschriebenen Knoten/Zysten kontrolliert werden?');
+ if(/fettleber|steatose/.test(ft))P('warn','Fettleber im Befund erwähnt','Leberwerte, Zucker und Blutfette gemeinsam betrachten.');
+ // Verlauf / Aktualität
+ for(const k in g){const a=g[k];if(a.length>=2){const p=a[a.length-2],c=a[a.length-1];if(status(p)==='ok'&&(status(c)==='low'||status(c)==='high'))P('info',c.name+': Verschlechterung im Verlauf','Vorher normal ('+fmt(p.value)+'), jetzt '+SL[status(c)]+' ('+fmt(c.value)+' '+c.unit+').');
+  if((status(p)==='low'||status(p)==='high')&&status(c)==='ok')P('ok',c.name+': wieder im Normalbereich','Von '+fmt(p.value)+' auf '+fmt(c.value)+' '+c.unit+'.')}}
+ const old=latest().filter(x=>(Date.now()-new Date(x.date))/864e5>400&&(status(x)!=='ok'));if(old.length)T('Kontrolle älterer auffälliger Werte',old.map(x=>x.name).join(', ')+' – letzte Messung über ein Jahr her.');
+ // Basis-Check
+ const base=[['ferritin','Eisenspeicher'],['vitd','Vitamin D'],['tsh','Schilddrüse'],['b12','B12-Status'],['hba1c','Langzeitzucker']].filter(([k])=>!has(k)&&!(k==='b12'&&has('holotc')));
+ if(S.values.length&&base.length)T('Basis-Check ergänzen',base.map(b=>CK[b[0]].name+' ('+b[1]+')').join(', '));
+ R.questions=[...new Set(R.questions.filter(Boolean))];
+ return R}
+
+function vAna(){if(!S.values.length&&!S.findings.length)return `<h1>Auswertung</h1><div class="disc">⚠️ Keine Diagnose – ersetzt keine ärztliche Beratung.</div><div class="empty">Noch keine Daten zum Auswerten.</div>`;
+ const R=analyse(),seg=sub||'all';
+ const blk=(t,arr)=>arr.length?`<h2>${t}</h2>`+arr.join(''):'';
+ const pat=R.patterns.map(p=>`<div class="card ins ${p.lvl}"><b>${esc(p.title)}</b><p>${esc(p.text)}</p></div>`);
+ const fl=R.flags.map(({x,s})=>`<div class="row"><span class="dot" style="background:${SC[s]}"></span><div class="grow"><div class="nm">${esc(x.name)}</div><div class="mt">${fdate(x.date)} · Ref. ${esc(rtxt(x))}</div></div><div class="val">${fmt(x.value)} <span class="mt">${esc(x.unit)}</span><br><span class="pill s-${s}">${SL[s]}</span></div></div>`);
+ const df=R.defs.map(d=>`<div class="card ins warn"><b>${esc(d.title)}</b><p>${esc(d.text)}</p><div class="sup">💊 <b style="display:inline">Mögliche Ergänzung:</b> ${esc(d.sup)}</div></div>`);
+ const ts=R.tests.map(t=>`<div class="row"><div class="grow"><div class="nm">🔬 ${esc(t.title)}</div><div class="mt">${esc(t.text)}</div></div></div>`);
+ let h=`<h1>Auswertung</h1><div class="disc">⚠️ <b>Keine Diagnose.</b> Regelbasierte Hinweise auf Basis typischer Referenzbereiche – Labore und Lebenssituation unterscheiden sich. Bitte alles mit deiner Ärztin besprechen; Nahrungsergänzungen und Dosierungen nur nach Rücksprache.</div>
+ <div class="seg">${[['all','Alles'],['flags','Auffällig'],['pat','Muster'],['def','Mängel'],['test','Tests']].map(([k,l])=>`<button data-seg="${k}" class="${seg===k?'on':''}">${l}</button>`).join('')}</div>`;
+ if(seg==='all'||seg==='flags')h+=fl.length?`<h2>Außerhalb des Bereichs</h2><div class="list">${fl.join('')}</div>`:(seg==='flags'?'<div class="empty">Keine Werte außerhalb des Referenzbereichs 🎉</div>':'');
+ if(seg==='all'||seg==='pat')h+=blk('Muster &amp; Zusammenhänge',pat)||(seg==='pat'?'<div class="empty">Keine auffälligen Muster.</div>':'');
+ if(seg==='all'||seg==='def')h+=blk('Mögliche Mängel &amp; Ergänzungen',df)||(seg==='def'?'<div class="empty">Keine Hinweise auf Mängel.</div>':'');
+ if(seg==='all'||seg==='test')h+=ts.length?`<h2>Mögliche weitere Tests &amp; offene Fragen</h2><div class="list">${ts.join('')}</div>`:(seg==='test'?'<div class="empty">Keine Vorschläge.</div>':'');
+ if(seg==='all')h+=`<button class="btnp full" data-tab2="q">${R.questions.length} Fragen für die Ärztin ansehen →</button>`;
+ return h}
+
+// ---------- Fragen ----------
+function vQ(){const R=(S.values.length||S.findings.length)?analyse():{questions:[]};const own=S.questions.slice().sort((a,b)=>a.created<b.created?-1:1);
+ return `<h1>Fragen</h1><p class="sub">für den nächsten Arztbesuch</p>
+ <h3>Meine Fragen</h3><div class="list">${own.map(x=>`<div class="row"><input type="checkbox" data-qdone="${x.id}" ${x.done?'checked':''}><div class="grow" style="${x.done?'text-decoration:line-through;color:var(--tx2)':''}">${esc(x.text)}</div><button class="lnk" style="color:var(--red)" data-qdel="${x.id}">✕</button></div>`).join('')}
+ <div class="row"><input id="nq" placeholder="Eigene Frage hinzufügen …" style="flex:1;border:0;font:inherit;outline:0;background:none"><button class="lnk" id="aq" style="font-weight:700">Hinzufügen</button></div></div>
+ <h3>Vorschläge aus der Auswertung (${R.questions.length})</h3><div class="list">${R.questions.length?R.questions.map((x,i)=>`<div class="row"><div class="grow">${esc(x)}</div><button class="lnk" data-qadd="${i}">＋</button></div>`).join(''):'<div class="row mt">Noch keine – trage Werte ein.</div>'}</div>
+ <button class="btn full" data-act="copyq">Alle Fragen kopieren</button><p class="hint">Mit ＋ übernimmst du einen Vorschlag in deine Liste und kannst ihn abhaken.</p>`}
+
+// ---------- Export / Import / Dagmar ----------
+const b64=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)});
+async function doExport(){const fs=[];for(const f of S.findings){fs.push({...f,file:f.file?await b64(f.file):null})}
+ const data={app:'Meine Werte',version:1,exported:new Date().toISOString(),values:S.values,findings:fs,questions:S.questions};
+ const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'});const name='meine-werte-backup-'+today()+'.json';
+ const file=new File([blob],name,{type:'application/json'});
+ if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:name});return}catch(e){if(e.name==='AbortError')return}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();toast('Backup erstellt')}
+async function doImport(file){try{const d=JSON.parse(await file.text());if(!d||!Array.isArray(d.values))throw 0;
+ for(const v of d.values)await put('values',v);
+ for(const f of d.findings||[]){if(f.file&&typeof f.file==='string'){f.file=await (await fetch(f.file)).blob()}await put('findings',f)}
+ for(const x of d.questions||[])await put('questions',x);await load();render();toast('Import: '+d.values.length+' Werte, '+(d.findings||[]).length+' Befunde')}catch(e){alert('Datei konnte nicht gelesen werden.')}}
+function summary(){const g=groups();let t='MEINE LABORWERTE & BEFUNDE (Stand '+fdate(today())+')\nHinweis: Frau, ca. 40er. Referenzbereiche = typisch bzw. vom Labor (markiert).\n\n== LABORWERTE (chronologisch je Marker) ==\n';
+ const ks=Object.keys(g).sort((a,b)=>((CK[g[a][0].key]?.grp||'zz')+g[a][0].name).localeCompare((CK[g[b][0].key]?.grp||'zz')+g[b][0].name));let gr=null;
+ for(const k of ks){const a=g[k],G=CK[a[0].key]?.grp||'Sonstige';if(G!==gr){t+='\n['+G+']\n';gr=G}
+  t+='- '+a[0].name+' (Ref. '+rtxt(a[a.length-1])+'): '+a.map(v=>fdate(v.date)+': '+fmt(v.value)+' '+v.unit+(status(v)==='low'?' ↓':status(v)==='high'?' ↑':'')+(v.lab?' ['+v.lab+']':'')+(v.note?' ('+v.note+')':'')+(v.example?' {BEISPIEL}':'')).join('; ')+'\n'}
+ if(S.findings.length){t+='\n== BEFUNDE ==\n';for(const f of S.findings.slice().sort((a,b)=>a.date<b.date?-1:1))t+='- '+fdate(f.date)+' | '+f.category+(f.title?' | '+f.title:'')+(f.doctor?' | '+f.doctor:'')+(f.example?' {BEISPIEL}':'')+'\n  '+(f.text||'(nur Anhang)').replace(/\n/g,'\n  ')+(f.fileName?'\n  Anhang: '+f.fileName:'')+'\n'}
+ if(S.questions.length)t+='\n== MEINE OFFENEN FRAGEN ==\n'+S.questions.filter(x=>!x.done).map(x=>'- '+x.text).join('\n')+'\n';
+ t+='\nBitte analysiere die Werte im Zusammenhang (Muster, mögliche Mängel, sinnvolle weitere Tests, Fragen an die Ärztin).';return t}
+async function copy(t){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast('In die Zwischenablage kopiert')}
+
+// ---------- Beispieldaten (klar markiert) ----------
+async function loadExample(){const d=(m)=>{const x=new Date();x.setMonth(x.getMonth()-m);return x.toISOString().slice(0,10)};
+ const L1='Beispiel-Hausarztpraxis',L2='Beispiel-Labor';
+ const V=[['Ferritin',22,12,L1],['Ferritin',18,6,L1],['Ferritin',41,1,L1],['Hämoglobin',11.6,6,L1],['Hämoglobin',12.4,1,L1],['MCV',79,6,L1],['CRP',1.2,1,L1],['TSH',3.1,12,L1],['TSH',4.6,1,L1],['fT4',1.05,1,L1],['Anti-TPO (TPO-AK)',112,1,L1],
+  ['Vitamin D (25-OH)',17,6,L2],['Vitamin D (25-OH)',34,1,L2],['Vitamin B12',310,1,L2],['Homocystein',13.4,1,L2],['Folsäure (Serum)',4.9,1,L2],['Magnesium (Serum)',0.81,1,L2],['Zink',68,1,L2],
+  ['HbA1c',5.4,1,L1],['Gesamtcholesterin',214,1,L1],['LDL-Cholesterin',131,1,L1],['HDL-Cholesterin',62,1,L1],['Triglyceride',88,1,L1],['Cortisol Speichel abends',6.8,2,L2],['Cortisol Speichel morgens',14,2,L2],['Progesteron',3.1,2,'Beispiel-Gynäkologie'],['Östradiol',140,2,'Beispiel-Gynäkologie'],['Omega-3-Index',5.6,2,L2]];
+ for(const [n,val,m,lab] of V){const c=findCat(n);await put('values',{id:uid(),key:c.key,name:c.name,value:val,unit:c.unit,date:d(m),lab,note:'BEISPIEL',refLow:null,refHigh:null,example:true})}
+ await put('findings',{id:uid(),category:'Knochendichte (DXA)',title:'BEISPIEL: Knochendichte LWS/Hüfte',date:d(3),doctor:'Beispiel-Radiologie',text:'BEISPIELTEXT: LWS T-Score -1,3; Hüfte T-Score -0,9. Beurteilung: Osteopenie der LWS. Kontrolle in 2 Jahren empfohlen.',example:true});
+ await put('findings',{id:uid(),category:'Ultraschall',title:'BEISPIEL: Schilddrüsen-Sono',date:d(1),doctor:'Beispiel-Endokrinologie',text:'BEISPIELTEXT: Echoarmes, inhomogenes Parenchym, Volumen 9 ml. Kein Knoten.',example:true});
+ await load();render();toast('Beispieldaten geladen')}
+async function delExample(){for(const v of S.values.filter(x=>x.example))await del('values',v.id);for(const f of S.findings.filter(x=>x.example))await del('findings',f.id);await load();render();toast('Beispieldaten gelöscht')}
+
+// ---------- Sheet & Events ----------
+function openSheet(h){$('#sheet').innerHTML=h;$('#sheetbg').classList.add('open');$('#sheet').querySelectorAll('[data-act=close]').forEach(b=>b.onclick=closeSheet)}
+function closeSheet(){$('#sheetbg').classList.remove('open')}
+$('#sheetbg').onclick=e=>{if(e.target.id==='sheetbg')closeSheet()};
+function bind(){const A=$('#app');
+ A.querySelectorAll('[data-marker]').forEach(e=>e.onclick=()=>{tab='vals';sub=e.dataset.marker;render();scrollTo(0,0)});
+ A.querySelectorAll('[data-edit]').forEach(e=>e.onclick=()=>formValue(S.values.find(v=>v.id===e.dataset.edit)));
+ A.querySelectorAll('[data-fedit]').forEach(e=>e.onclick=ev=>{if(ev.target.closest('[data-view]'))return;formFinding(S.findings.find(v=>v.id===e.dataset.fedit))});
+ A.querySelectorAll('[data-view]').forEach(e=>e.onclick=()=>viewFile(S.findings.find(v=>v.id===e.dataset.view)));
+ A.querySelectorAll('[data-seg]').forEach(e=>e.onclick=()=>{sub=e.dataset.seg;render()});
+ A.querySelectorAll('[data-tab2]').forEach(e=>e.onclick=()=>{tab=e.dataset.tab2;sub=null;render();scrollTo(0,0)});
+ const qs=$('#qs');if(qs)qs.oninput=()=>{q=qs.value;const p=qs.selectionStart;render();const n=$('#qs');n.focus();n.setSelectionRange(p,p)};
+ A.querySelectorAll('[data-act]').forEach(e=>e.onclick=async()=>{const a=e.dataset.act;
+  if(a==='back'){sub=null;render()}
+  if(a==='addsame')formValue(null,e.dataset.name);
+  if(a==='loadex')loadExample();
+  if(a==='delex'&&confirm('Alle Beispieldaten löschen? Eigene Einträge bleiben erhalten.'))delExample();
+  if(a==='delall'&&confirm('Wirklich ALLE Daten löschen? Vorher Backup exportieren!')){for(const s of ['values','findings','questions'])for(const x of S[s])await del(s,x.id);await load();render()}
+  if(a==='export')doExport();
+  if(a==='import')$('#impf').click();
+  if(a==='dagmar')copy(summary());
+  if(a==='copyq'){const R=analyse();copy('Fragen für den Arztbesuch:\n'+[...S.questions.filter(x=>!x.done).map(x=>x.text),...R.questions].map(x=>'• '+x).join('\n'))}});
+ const imp=$('#impf');if(imp)imp.onchange=()=>imp.files[0]&&doImport(imp.files[0]);
+ const aq=$('#aq');if(aq){const add=async()=>{const t=$('#nq').value.trim();if(!t)return;await put('questions',{id:uid(),text:t,done:false,created:Date.now()});await load();render()};aq.onclick=add;$('#nq').onkeydown=e=>e.key==='Enter'&&add()}
+ A.querySelectorAll('[data-qdone]').forEach(e=>e.onchange=async()=>{const x=S.questions.find(y=>y.id===e.dataset.qdone);x.done=e.checked;await put('questions',x);await load();render()});
+ A.querySelectorAll('[data-qdel]').forEach(e=>e.onclick=async()=>{await del('questions',e.dataset.qdel);await load();render()});
+ A.querySelectorAll('[data-qadd]').forEach(e=>e.onclick=async()=>{const R=analyse();await put('questions',{id:uid(),text:R.questions[+e.dataset.qadd],done:false,created:Date.now()});await load();render();toast('Übernommen')})}
+
+(async()=>{await openDB();await load();if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});render();
+ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW',e))})();
+</script></body></html>
