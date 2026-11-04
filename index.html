@@ -88,6 +88,7 @@ textarea{resize:vertical}
 .hero{position:relative;border-radius:30px;padding:16px 16px 18px;text-align:center;background:linear-gradient(135deg,#ffdbe7 0,#fbe4f0 45%,#ebe2ff 100%);box-shadow:0 10px 30px rgba(232,140,170,.25);overflow:hidden;margin-bottom:16px}
 .hero:after{content:"";position:absolute;inset:0;background-image:radial-gradient(#fff 1.2px,transparent 1.6px),radial-gradient(#fff 1px,transparent 1.4px);background-size:46px 46px,29px 29px;background-position:0 0,13px 17px;opacity:.55;pointer-events:none}
 .hero>*{position:relative;z-index:1}
+.pwrap{margin:6px 0 2px}.ppill{background:rgba(255,255,255,.75);color:#c9476f;font-weight:800;font-size:14px;padding:5px 14px;border-radius:20px;border:1.5px dashed #f0a3bc}.ppill.on{background:#f27aa5;color:#fff;border:1.5px solid #f27aa5}.pint{display:flex;gap:6px;justify-content:center;margin-top:6px}.pint button{font-size:13px;font-weight:700;padding:3px 10px;border-radius:14px;background:rgba(255,255,255,.7);color:#a35a77}.pint button.on{background:#fbd3e0;color:#c9476f}.heat .pd{position:absolute;top:0;right:1px;font-size:8px;font-style:normal}
 .zpill{display:inline-block;background:rgba(255,255,255,.75);color:#d9658f;font-weight:800;font-size:14px;padding:5px 14px;border-radius:20px}
 .hero .ch{width:150px;height:118px;margin:4px auto -6px;display:block}
 .score{font-size:74px;font-weight:900;color:#ee6f9c;line-height:1;letter-spacing:-1px;text-shadow:0 3px 0 rgba(255,255,255,.6)}
@@ -626,7 +627,9 @@ function tw(d){if(!d)return null;const p=v10(d,'pain');const a=avg([v10(d,'sleep
 const f1=n=>n==null?'–':(Math.round(n*10)/10).toFixed(1).replace('.',',');
 function twCol(t){return t==null?'#f6eef2':t>=7?'#bfe8cf':t>=4.5?'#ffe9b0':'#ffc9d3'}
 function twTxt(t,p){if(t==null)return'Wie geht es dir heute?';if(p!=null&&p>=7)return'Autsch – heute ist ein schwerer Tag. Sei lieb zu dir 🤍';if(t>=8)return'Was für ein schöner Tag! 💗';if(t>=6.5)return'Ein richtig guter Tag ✨';if(t>=5)return'Ein ganz okayer Tag.';if(t>=3)return'Heute ist nicht so leicht – du machst das gut.';return'Ein harter Tag. Gönn dir Ruhe & Wärme 🫶'}
-function perStarts(){const isP=x=>(x.period&&x.period!=='keine')||(x.events||[]).includes('Periode');const P=new Set(S.diary.filter(isP).map(x=>x.id));const a=[...P].filter(id=>{const y=new Date(id+'T12:00');y.setDate(y.getDate()-1);return !P.has(ymd(y))});const ps=prof().periodStart;if(ps)a.push(ps);return a.sort()}
+const isPer=x=>!!x&&((x.period&&x.period!=='keine')||(x.events||[]).includes('Periode'));
+function perDayN(d){let n=1;const y=new Date(d+'T12:00');for(;;){y.setDate(y.getDate()-1);if(isPer(S.diary.find(x=>x.id===ymd(y))))n++;else return n}}
+function perStarts(){const isP=isPer;const P=new Set(S.diary.filter(isP).map(x=>x.id));const a=[...P].filter(id=>{const y=new Date(id+'T12:00');y.setDate(y.getDate()-1);return !P.has(ymd(y))});const ps=prof().periodStart;if(ps)a.push(ps);return a.sort()}
 function cycDay(d){const s=perStarts().filter(x=>x<=d).pop();if(!s)return null;const n=Math.round((new Date(d+'T12:00')-new Date(s+'T12:00'))/864e5)+1;return n>=1&&n<=90?n:null}
 // ---------- Kawaii-Figuren ----------
 function moodOf(k,v){if(k==='pain'){if(v==null)return'neu';return v>=7?'cry':v>=5?'sad':v>=3?'neu':'happy'}if(v==null)return'neu';return v>=6.5?'happy':v>=4?'neu':'sad'}
@@ -657,7 +660,7 @@ function vDiary(){if(!dDate)dDate=today();const ex=S.diary.find(x=>x.id===dDate)
  const xs=xsum(e);
  let h=`<h1>${isT?'Heute':new Date(dDate+'T12:00').toLocaleDateString('de-DE',{weekday:'long'})}</h1>
  <div class="dnav"><button class="stp" data-dd="-1" aria-label="Vortag">‹</button><span class="dl">${dl}<input type="date" id="ddate" value="${dDate}" max="${calToday()}" aria-label="Datum wählen"></span>${dDate>=calToday()?'':'<button class="stp" data-dd="1" aria-label="Folgetag">›</button>'}${ex&&ex.example?'<span class="ex">BEISPIEL</span>':''}</div>
- <div class="hero">${cd?`<span class="zpill">Zyklustag ${cd}</span>`:''}<div id="hch">${chr('cloud',t)}</div><div class="score ${t==null?'na':''}" id="hsc">${f1(t)}</div><div class="htxt" id="htx">${twTxt(t,e.pain)}</div></div>
+ <div class="hero">${cd?`<span class="zpill">Zyklustag ${cd}</span>`:''}<div class="pwrap"><button class="ppill ${isPer(e)?'on':''}" id="pertog" aria-pressed="${isPer(e)}">🩸 ${isPer(e)?'Periode Tag '+perDayN(dDate):'Periode'}</button>${isPer(e)?`<div class="pint">${['leicht','mittel','stark'].map(v=>`<button class="${e.period===v?'on':''}" data-pint="${v}">${v}</button>`).join('')}</div>`:''}</div><div id="hch">${chr('cloud',t)}</div><div class="score ${t==null?'na':''}" id="hsc">${f1(t)}</div><div class="htxt" id="htx">${twTxt(t,e.pain)}</div></div>
  ${SLD.map(([f,l,a,b])=>{const v=v10(e,f);return `<div class="sl"><div class="av" style="background:${AVB[f]}" id="av_${f}">${chr(f,v)}</div><div class="grow"><div class="nm">${l}</div><input type="range" class="rg ${v==null?'unset':''}" min="0" max="10" step="1" value="${v==null?5:Math.round(v)}" data-sl="${f}" aria-label="${l}" style="--p:${(v==null?5:Math.round(v))*10}%"><div class="sub2"><span>${a}</span><span>${b}</span></div></div><div class="bub ${v==null?'na':''}" id="bb_${f}">${v==null?'–':Math.round(v)}</div></div>`}).join('')}
  ${xs.length?`<div class="xs" data-act2="extras">${xs.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:''}
  <div class="plus"><button id="dplus" aria-label="Ereignis oder Notiz">+</button><span>Ereignis / Notiz</span></div>
@@ -678,7 +681,7 @@ function observations(){const D=S.diary.slice().sort((a,b)=>a.id<b.id?-1:1),O=[]
  return O}
 function vDiaryOverview(){const days=dayList(30),M=Object.fromEntries(S.diary.map(d=>[d.id,d]));const n=days.filter(d=>M[d]).length;
  let h=`<h2>Verlauf</h2>`;if(!S.diary.length)return h+'<div class="empty">Noch keine Einträge – schieb einfach die Regler oben 💗</div>';
- return h+`<div class="card"><div class="mt" style="margin-bottom:8px;font-weight:700">Tageswert · ${n} von 30 Tagen erfasst</div><div class="heat">${days.map(d=>{const t=M[d]?tw(M[d]):null;return `<button data-dgo="${d}" title="${fdate(d)}" style="background:${M[d]?twCol(t):'#f9f1f4'}${d===dDate?';outline:2.5px solid #f27aa5':''}">${t!=null?Math.round(t):''}${(z=>z?`<small class="zt">Z${z}</small>`:'')(cycDay(d))}</button>`}).join('')}</div><div class="mt" style="display:flex;justify-content:space-between;margin-top:6px"><span>${fdate(days[0])}</span><span>heute</span></div><button class="btn2 full" data-tab2="ana">Details in der Auswertung →</button></div>`}
+ return h+`<div class="card"><div class="mt" style="margin-bottom:8px;font-weight:700">Tageswert · ${n} von 30 Tagen erfasst</div><div class="heat">${days.map(d=>{const t=M[d]?tw(M[d]):null;return `<button data-dgo="${d}" title="${fdate(d)}" style="background:${M[d]?twCol(t):'#f9f1f4'}${isPer(M[d])?';box-shadow:inset 0 0 0 2px #e8577f':''}${d===dDate?';outline:2.5px solid #f27aa5':''}">${t!=null?Math.round(t):''}${isPer(M[d])?'<i class="pd">🩸</i>':''}${(z=>z?`<small class="zt">Z${z}</small>`:'')(cycDay(d))}</button>`}).join('')}</div><div class="mt" style="display:flex;justify-content:space-between;margin-top:6px"><span>${fdate(days[0])}</span><span>heute</span></div><button class="btn2 full" data-tab2="ana">Details in der Auswertung →</button></div>`}
 function diaryTrends(){const days=dayList(30),M=Object.fromEntries(S.diary.map(d=>[d.id,d]));if(!S.diary.length)return'';
  const S5=[['tw','Tageswert',10,'#ee7fa8'],['pain','Schmerz',10,'#f39aa9'],['sleep10','Ausgeschlafen',10,'#a993e3'],['mood10','Laune',10,'#f48fb1'],['energy10','Energie',10,'#eabc3c'],['sleeph','Schlafdauer (Std.)',12,'#8cb8ec'],['weight','Gewicht (kg)',null,'#b89aa8']];
  let h='<h2>Tagebuch (30 Tage)</h2><div class="list">'+S5.map(([f,l,mx,col])=>{let vals=days.map(d=>M[d]?(f==='tw'?tw(M[d]):f in OLD5||f==='pain'?v10(M[d],f):M[d][f]):null);const a=avg(vals);if(a==null)return'';let vv=vals;if(mx==null){const nn=vals.filter(x=>x!=null);const lo=Math.min(...nn)-1,hi=Math.max(...nn)+1;vv=vals.map(x=>x==null?null:x-lo);mx=hi-lo}
@@ -697,6 +700,8 @@ function bindDiary(){const A=$('#app');if(tab!=='heute')return;const e=dTmp;
  A.querySelectorAll('[data-dd]').forEach(b=>b.onclick=()=>{const x=new Date(dDate+'T12:00');x.setDate(x.getDate()+(+b.dataset.dd));const n=ymd(x);if(n>calToday())return;dDate=n;dTmp=null;render()});
  bindDgo();
  $('#ddate').onchange=()=>{const v=$('#ddate').value;if(v&&v<=calToday()){dDate=v;dTmp=null;render()}};
+ $('#pertog').onclick=async()=>{if(isPer(e)){e.period=null;e.events=(e.events||[]).filter(x=>x!=='Periode')}else e.period='mittel';await dSave();render()};
+ A.querySelectorAll('[data-pint]').forEach(b=>b.onclick=async()=>{e.period=b.dataset.pint;await dSave();render()});
  $('#dplus').onclick=()=>extrasSheet();A.querySelectorAll('[data-act2=extras]').forEach(b=>b.onclick=()=>extrasSheet())}
 function bindDgo(){document.querySelectorAll('[data-dgo]').forEach(b=>b.onclick=()=>{dDate=b.dataset.dgo;dTmp=null;render();scrollTo(0,0)})}
 let xOpen=new Set();
