@@ -71,6 +71,13 @@ label.f input,label.f select,label.f textarea{width:100%;border:0;font:inherit;f
 input[type=checkbox]{width:22px;height:22px;accent-color:var(--blue)}
 .search{width:100%;border:0;border-radius:10px;background:#e3e3e8;padding:9px 12px;font:inherit;font-size:16px;margin-bottom:12px;outline:0}
 textarea{resize:vertical}
+.s-sub,.s-sup{background:#fff4cc;color:#8a6d00}.s-ref{background:#e3f6e8;color:#1e7b34}.s-low,.s-high{background:#ffe5e5;color:#c62828}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}.chip{background:#fff;color:var(--tx);border:1.5px solid var(--sep);border-radius:22px;padding:10px 14px;font-size:15px;font-weight:600;min-height:44px}.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.emo{display:flex;gap:6px}.emo button{flex:1;background:#fff;color:var(--tx);font-size:26px;padding:8px 0 4px;border:1.5px solid var(--sep);display:flex;flex-direction:column;align-items:center;min-height:56px}.emo button small{font-size:11px;color:var(--tx2)}.emo button.on{border-color:var(--blue);background:#e8ecfb}
+.pain{display:grid;grid-template-columns:repeat(11,1fr);gap:3px}.pain button{padding:12px 0;background:#f0f0f5;color:var(--tx);font-size:15px;border-radius:9px;min-height:44px}
+.stp{width:44px;height:44px;padding:0;font-size:22px;background:#e8ecfb;color:var(--blue);border-radius:22px;flex:none}
+.heat{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}.heat button{aspect-ratio:1;padding:0;border-radius:7px;font-size:12px;color:#fff;font-weight:700}
+.wseg{position:sticky;top:0;z-index:4;background:var(--bg);padding-top:calc(env(safe-area-inset-top) + 4px)}
 </style></head><body>
 <main id="app"></main>
 <button class="fab" id="fab" aria-label="Neu">+</button>
@@ -153,22 +160,78 @@ const CAT=[
 ['lh','LH','','mU/ml',2.4,12.6,'Hormone','Follikelphase; zyklusabhängig'],
 ['prolaktin','Prolaktin','','ng/ml',4.8,23.3,'Hormone',''],
 ['amh','AMH','anti-müller-hormon','ng/ml',0.5,6,'Hormone','altersabhängig'],
+['mg_vb','Magnesium (Vollblut)','magnesium vollblut','mmol/l',1.38,1.5,'Mineralstoffe','laborabhängig'],
+['homa','HOMA-IR','homa,insulinresistenz','',0,2.5,'Zucker','berechnet aus Glukose × Insulin / 405'],
+['apob','Apolipoprotein B','apob,apo b','mg/dl',0,130,'Fette',''],
 ['omega3','Omega-3-Index','','%',8,11,'Fettsäuren','Zielbereich 8–11 %'],
 ['aaepa','AA/EPA-Quotient','','',1.5,3,'Fettsäuren','Zielbereich ca. 1,5–3']
 ].map(a=>({key:a[0],name:a[1],syn:a[2],unit:a[3],lo:a[4],hi:a[5],grp:a[6],note:a[7]}));
 const CK=Object.fromEntries(CAT.map(c=>[c.key,c]));
+// ---------- Geschlechtsspezifische Referenz- & Optimalbereiche ----------
+// Männliche Referenzbereiche (typisch, Erwachsene) – nur wo sie deutlich abweichen
+const MALE={ferritin:[30,400],hb:[13.5,17.5],hkt:[40,52],ery:[4.3,5.9],krea:[0.7,1.2],harnsaeure:[3.4,7.0],testosteron:[2.5,8.4],oestradiol:[10,40],progesteron:[0.2,1.4],fsh:[1.5,12.4],lh:[1.7,8.6],prolaktin:[4,15.2],shbg:[18,54],dheas:[80,560],ggt:[0,60],ck:[0,190],got:[0,50],gpt:[0,50],hdl:[40,999],eisen:[60,180],amh:[0.7,19]};
+// Optimal-/Zielbereiche (Prävention). src = kurze Quellenangabe, „umstritten“ wo Evidenz debattiert wird
+const OPT={
+ferritin:{w:[50,150],m:[50,300],src:'Quelle: Präventiv-/Mikronährstoffmedizin; WHO: <30 spricht oft schon für Eisenmangel. Zielwert >50 umstritten.'},
+vitd:{w:[40,60],src:'Quelle: Endocrine Society 2011 (≥30 ng/ml ausreichend); 40–60 präventivmedizinisch empfohlen – umstritten.'},
+b12:{w:[400,900],src:'Quelle: Labor-/Präventivmedizin – 200–400 pg/ml gilt als Graubereich.'},
+holotc:{w:[50,150],src:'Quelle: Laborliteratur – über 50 pmol/l ist ein B12-Mangel unwahrscheinlich.'},
+folat:{w:[10,24],src:'Quelle: Präventivmedizin – umstritten.'},
+homocystein:{w:[5,10],src:'Quelle: Präventiv-/Kardiologie-Literatur – unter 10 µmol/l gilt als günstig.'},
+tsh:{w:[0.5,2.5],src:'Quelle: NACB-Leitlinie 2003 diskutiert <2,5 mU/l; in der Fachwelt umstritten (Referenz 0,4–4,0).'},
+ft3:{w:[3.0,4.2],src:'Quelle: Funktionelle Medizin – umstritten.'},
+ft4:{w:[1.1,1.6],src:'Quelle: Funktionelle Medizin – umstritten.'},
+hba1c:{w:[4.0,5.4],src:'Quelle: Präventivmedizin; ADA: ab 5,7 % Prädiabetes-Bereich.'},
+glukose:{w:[70,90],src:'Quelle: Präventivmedizin; ADA: ab 100 mg/dl erhöht. Grenze 90 umstritten.'},
+insulin:{w:[2,8],src:'Quelle: Präventivmedizin – umstritten.'},
+homa:{w:[0,1.5],src:'Quelle: Stoffwechsel-Literatur; >2,5 spricht für Insulinresistenz. Optimum umstritten.'},
+ldl:{w:[0,100],src:'Quelle: ESC/EAS 2019 – Ziel hängt vom Gesamtrisiko ab; <100 mg/dl bei niedrigem/moderatem Risiko.'},
+hdl:{w:[55,100],m:[45,100],src:'Quelle: Präventivmedizin; sehr hohe Werte (>100) bringen keinen Zusatznutzen.'},
+trig:{w:[0,100],src:'Quelle: AHA 2011 – unter 100 mg/dl „optimal“.'},
+apob:{w:[0,90],src:'Quelle: ESC/EAS 2019 – <100 bzw. <80 mg/dl je nach Risiko.'},
+lpa:{w:[0,75],src:'Quelle: EAS-Konsensus 2022 – unter 75 nmol/l geringes Risiko.'},
+hscrp:{w:[0,1],src:'Quelle: AHA/CDC 2003 – unter 1 mg/l niedriges Herz-Kreislauf-Risiko.'},
+magnesium:{w:[0.85,1.0],src:'Quelle: Mikronährstoffmedizin – Serumwert begrenzt aussagekräftig, umstritten.'},
+mg_vb:{w:[1.42,1.6],src:'Quelle: Mikronährstoffmedizin – umstritten.'},
+zink:{w:[90,120],src:'Quelle: Mikronährstoffmedizin – umstritten.'},
+selen:{w:[110,140],src:'Quelle: Mikronährstoffmedizin – umstritten.'},
+omega3:{w:[8,11],src:'Quelle: Harris & von Schacky 2004 (Omega-3-Index).'},
+harnsaeure:{w:[2.4,5.0],m:[3.4,6.0],src:'Quelle: Präventivmedizin; EULAR: Gicht-Ziel <6 mg/dl. Optimum umstritten.'},
+ggt:{w:[0,25],m:[0,35],src:'Quelle: Epidemiologie (Risiko steigt schon im oberen Normalbereich) – umstritten.'},
+gpt:{w:[0,25],m:[0,33],src:'Quelle: ACG-Leitlinie 2017 (gesunde Obergrenze) – umstritten.'},
+aaepa:{w:[1.5,3],src:'Quelle: Fettsäure-Literatur – umstritten.'}};
+const DESC={ferritin:'Speicherform von Eisen – zeigt, wie voll die Eisenspeicher sind. Bei Entzündungen kann er falsch hoch sein.',eisen:'Eisen im Blut; schwankt stark und ist allein wenig aussagekräftig.',transferrin:'Transporteiweiß für Eisen; steigt bei Eisenmangel.',tsat:'Wie viel Prozent des Transferrins mit Eisen beladen sind.',
+hb:'Roter Blutfarbstoff, transportiert Sauerstoff. Niedrig = Blutarmut (Anämie).',hkt:'Anteil der Blutzellen am Blutvolumen.',ery:'Anzahl der roten Blutkörperchen.',mcv:'Größe der roten Blutkörperchen – klein z. B. bei Eisenmangel, groß bei B12-/Folatmangel.',mch:'Hämoglobin pro rotem Blutkörperchen.',mchc:'Hämoglobin-Konzentration in den roten Blutkörperchen.',leuko:'Weiße Blutkörperchen – Abwehrzellen.',thrombo:'Blutplättchen – wichtig für die Gerinnung.',
+tsh:'Steuerhormon der Hirnanhangdrüse für die Schilddrüse. Hoch = Schilddrüse arbeitet eher zu wenig.',ft3:'Freies, aktives Schilddrüsenhormon.',ft4:'Freies Schilddrüsenhormon (Vorstufe von fT3).',antitpo:'Antikörper gegen die Schilddrüse – erhöht typisch bei Hashimoto.',antitg:'Antikörper gegen Thyreoglobulin – Hinweis auf Autoimmun-Schilddrüse.',trak:'Antikörper gegen den TSH-Rezeptor – typisch bei Morbus Basedow.',
+vitd:'Speicherform von Vitamin D – wichtig für Knochen, Muskeln und Immunsystem.',b12:'Vitamin B12 im Blut – für Nerven und Blutbildung.',holotc:'Aktives, verwertbares Vitamin B12 – genauer als Gesamt-B12.',folat:'Folsäure – für Zellteilung und Blutbildung.',b6:'Vitamin B6 – für Nerven und Stoffwechsel; zu viel kann Nerven reizen.',homocystein:'Stoffwechselprodukt; steigt bei B12-/Folat-/B6-Mangel und gilt als Gefäß-Risikofaktor.',
+magnesium:'Mineralstoff für Muskeln und Nerven. Im Serum nur ein kleiner Teil des Körpermagnesiums.',mg_vb:'Magnesium im Vollblut – zeigt den Zellgehalt etwas besser als das Serum.',zink:'Spurenelement für Immunsystem, Haut, Haare und Hormone.',selen:'Spurenelement u. a. für die Schilddrüse und Zellschutz.',kupfer:'Spurenelement – Gegenspieler von Zink.',
+calcium:'Mineralstoff für Knochen, Nerven und Muskeln.',kalium:'Elektrolyt für Herz und Muskeln.',natrium:'Elektrolyt für den Wasserhaushalt.',phosphat:'Mineralstoff für Knochen und Energie.',pth:'Nebenschilddrüsenhormon – regelt Calcium; steigt oft bei Vitamin-D-Mangel.',
+crp:'Entzündungsmarker.',hscrp:'Sehr empfindlich gemessenes CRP – zeigt stille Entzündung und Herz-Kreislauf-Risiko.',bsg:'Blutsenkung – unspezifischer Entzündungswert.',
+hba1c:'Langzeitzucker – Durchschnitt der letzten ca. 3 Monate.',glukose:'Blutzucker nüchtern.',insulin:'Insulin nüchtern – hoch bei Insulinresistenz.',homa:'HOMA-IR = Nüchternzucker × Insulin / 405 – Maß für Insulinresistenz.',
+chol:'Gesamtcholesterin – allein wenig aussagekräftig.',ldl:'„Schlechtes“ Cholesterin – Hauptrisikofaktor für Gefäßverkalkung.',hdl:'„Gutes“ Cholesterin – transportiert Fett zur Leber zurück.',trig:'Blutfette – steigen bei Zucker, Alkohol und Insulinresistenz.',apob:'Zahl der gefäßschädigenden Fett-Teilchen – genauer als LDL.',lpa:'Genetisch festgelegter Gefäß-Risikofaktor – einmal im Leben messen.',
+got:'Leber-/Muskelenzym.',gpt:'Leberenzym – erhöht z. B. bei Fettleber.',ggt:'Leber-/Gallenenzym – reagiert auf Alkohol, Fettleber, Medikamente.',ap:'Enzym aus Leber und Knochen.',bili:'Abbauprodukt des Blutfarbstoffs.',albumin:'Wichtigstes Bluteiweiß.',
+krea:'Abbauprodukt der Muskeln – zeigt die Nierenfunktion; abhängig von Muskelmasse.',egfr:'Geschätzte Filterleistung der Nieren.',harnstoff:'Eiweiß-Abbauprodukt, über die Niere ausgeschieden.',harnsaeure:'Abbauprodukt aus Purinen – hoch bei Gicht-Risiko.',ck:'Muskelenzym – steigt nach Sport deutlich an.',
+cortisol_s:'Stresshormon (Serum, morgens).',cort_m:'Stresshormon im Speichel morgens.',cort_mi:'Stresshormon im Speichel mittags.',cort_a:'Stresshormon im Speichel abends.',cort_n:'Stresshormon im Speichel nachts.',melatonin:'Schlafhormon.',dheas:'Hormonvorstufe aus der Nebenniere.',
+oestradiol:'Wichtigstes Östrogen – stark zyklusabhängig.',progesteron:'Gelbkörperhormon – in der 2. Zyklushälfte.',testosteron:'Männliches Sexualhormon (auch bei Frauen in kleiner Menge).',shbg:'Bindeeiweiß für Sexualhormone.',fsh:'Steuerhormon für die Eierstöcke/Hoden; steigt in den Wechseljahren.',lh:'Steuerhormon für Eisprung bzw. Testosteronbildung.',prolaktin:'Milchbildungshormon.',amh:'Zeigt die Eizellreserve.',
+omega3:'Anteil von EPA+DHA in den roten Blutkörperchen.',aaepa:'Verhältnis entzündungsfördernder zu -hemmender Fettsäuren.'};
+function sexKey(){return (S.meta.find(x=>x.id==='profile')||{}).sex||'w'}
+function crange(c){if(sexKey()==='m'&&MALE[c.key])return{lo:MALE[c.key][0],hi:MALE[c.key][1]};return{lo:c.lo,hi:c.hi}}
+function optInfo(c){const o=OPT[c.key];if(!o)return null;const r=(sexKey()==='m'&&o.m)?o.m:o.w;return{lo:r[0],hi:r[1],src:o.src}}
+function optRange(v){const c=CK[v.key];if(!c||norm(c.unit)!==norm(v.unit))return null;return optInfo(c)}
+function ost(v){const s=status(v);if(s!=='ok')return s;const o=optRange(v);if(!o)return'ref';if(o.lo!=null&&o.lo>0&&v.value<o.lo)return'sub';if(o.hi!=null&&o.hi<999&&v.value>o.hi)return'sup';return'ok'}
+
 const FCATS=['Blutbild/Labor (Text)','Röntgen','Knochendichte (DXA)','Ultraschall','MRT','CT','EKG','Arztbrief','Gynäkologie','Haut','Augen','Zahn','Sonstiges'];
 
 // ---------- IndexedDB ----------
 let DB;
-function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('meinewerte',1);r.onupgradeneeded=()=>{const d=r.result;['values','findings','questions'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'})})};r.onsuccess=()=>{DB=r.result;res()};r.onerror=()=>rej(r.error)})}
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('meinewerte',2);r.onupgradeneeded=()=>{const d=r.result;['values','findings','questions','diary','meta'].forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'})})};r.onsuccess=()=>{DB=r.result;res()};r.onerror=()=>rej(r.error)})}
 function tx(s,m='readonly'){return DB.transaction(s,m).objectStore(s)}
 function all(s){return new Promise((res,rej)=>{const r=tx(s).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 function put(s,o){return new Promise((res,rej)=>{const r=tx(s,'readwrite').put(o);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
 function del(s,id){return new Promise((res,rej)=>{const r=tx(s,'readwrite').delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-let S={values:[],findings:[],questions:[]};
-async function load(){for(const k of ['values','findings','questions'])S[k]=await all(k)}
+let S={values:[],findings:[],questions:[],diary:[],meta:[]};
+async function load(){for(const k of ['values','findings','questions','diary','meta'])S[k]=await all(k)}
 
 // ---------- Helfer ----------
 const $=s=>document.querySelector(s);
@@ -182,10 +245,10 @@ const norm=s=>String(s||'').toLowerCase().trim();
 function findCat(name){const n=norm(name);return CAT.find(c=>norm(c.name)===n||c.syn.split(',').some(x=>x&&norm(x)===n))||null}
 function range(v){const c=CK[v.key];const lo=num(v.refLow),hi=num(v.refHigh);
   if(lo!=null||hi!=null)return{lo,hi,own:true};
-  if(c&&norm(c.unit)===norm(v.unit))return{lo:c.lo,hi:c.hi,own:false};
+  if(c&&norm(c.unit)===norm(v.unit))return{...crange(c),own:false};
   return null}
 function status(v){const r=range(v);if(!r)return'na';if(r.lo!=null&&v.value<r.lo)return'low';if(r.hi!=null&&v.value>r.hi)return'high';return'ok'}
-const SL={low:'niedrig',high:'hoch',ok:'normal',na:'ohne Ref.'};const SC={low:'var(--blue)',high:'var(--pink)',ok:'var(--green)',na:'#aaa'};
+const SL={low:'niedrig',high:'hoch',ok:'optimal',ref:'normal',sub:'unter optimal',sup:'über optimal',na:'ohne Ref.'};const SC={low:'#e5383b',high:'#e5383b',ok:'var(--green)',ref:'var(--green)',sub:'#f5c400',sup:'#f5c400',na:'#aaa'};
 function rtxt(v){const r=range(v);if(!r)return'kein Referenzbereich';const a=r.lo!=null&&r.lo>0?fmt(r.lo):null,b=r.hi!=null&&r.hi<999?fmt(r.hi):null;return (a&&b?a+'–'+b:a?'≥ '+a:b?'≤ '+b:'')+' '+(v.unit||'')+(r.own?' (Labor)':' (typisch)')}
 function groups(){const g={};for(const v of S.values){const k=v.key||('x:'+norm(v.name));(g[k]=g[k]||[]).push(v)}for(const k in g)g[k].sort((a,b)=>a.date<b.date?-1:1);return g}
 function latest(){return Object.values(groups()).map(a=>a[a.length-1])}
@@ -193,8 +256,9 @@ function spark(arr,w=120,h=34){const vs=arr.map(v=>v.value);if(vs.length<2)retur
  if(r){if(r.lo!=null&&r.lo>0)mn=Math.min(mn,r.lo);if(r.hi!=null&&r.hi<999)mx=Math.max(mx,r.hi)}if(mx===mn){mx+=1;mn-=1}
  const X=i=>4+i*(w-8)/(vs.length-1),Y=v=>h-4-(v-mn)*(h-8)/(mx-mn);
  let band='';if(r&&(r.lo!=null||r.hi!=null)){const y1=Y(r.hi!=null&&r.hi<999?r.hi:mx),y2=Y(r.lo!=null?Math.max(r.lo,mn):mn);band=`<rect x="0" y="${y1}" width="${w}" height="${Math.max(0,y2-y1)}" fill="#28a745" opacity=".1"/>`}
+ const o=optRange(arr[arr.length-1]);if(o&&!r?.own){const y1=Y(Math.min(o.hi,mx)),y2=Y(Math.max(o.lo??mn,mn));band+=`<rect x="0" y="${y1}" width="${w}" height="${Math.max(0,y2-y1)}" fill="#28a745" opacity=".18"/>`}
  const pts=vs.map((v,i)=>X(i)+','+Y(v)).join(' ');
- return `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:${h}px;display:block">${band}<polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>${arr.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v.value)}" r="2.6" fill="${SC[status(v)]}"/>`).join('')}</svg>`}
+ return `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:${h}px;display:block">${band}<polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>${arr.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v.value)}" r="2.6" fill="${SC[ost(v)]}"/>`).join('')}</svg>`}
 
 // ---------- Navigation ----------
 const IC={
@@ -202,32 +266,27 @@ home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2
 vals:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7 15h10"/></svg>',
 find:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>',
 ana:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4L7 18l-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg>',
+heute:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>',
+supp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.5 8.5l5 7"/></svg>',
+mehr:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
 q:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M10 9.5a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.2v.5M12 16h.01"/></svg>'};
-const TABS=[['home','Übersicht'],['vals','Werte'],['find','Befunde'],['ana','Auswertung'],['q','Fragen']];
-let tab='home',sub=null;
-function renderNav(){$('#nav').innerHTML=TABS.map(([k,l])=>`<button data-tab="${k}" class="${tab===k?'on':''}">${IC[k]}${l}</button>`).join('');
+const TABS=[['heute','Heute'],['home','Werte'],['supp','Supplements'],['ana','Auswertung'],['mehr','Mehr']];const NAVOF={vals:'home',find:'home',q:'mehr'};
+let tab='heute',sub=null;
+function renderNav(){$('#nav').innerHTML=TABS.map(([k,l])=>`<button data-tab="${k}" class="${(NAVOF[tab]||tab)===k?'on':''}">${IC[k]}${l}</button>`).join('');
  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;sub=null;render();scrollTo(0,0)})}
-function render(){renderNav();const f={home:vHome,vals:vVals,find:vFind,ana:vAna,q:vQ}[tab];$('#app').innerHTML=f();bind();
- $('#fab').style.display=(tab==='vals'||tab==='home'||tab==='find')?'block':'none'}
+function render(){renderNav();const f={heute:vDiary,home:vHome,vals:vVals,find:vFind,ana:vAna,q:vQ,supp:vSupp,mehr:vMore}[tab];const ws=['home','vals','find'].includes(tab)&&!sub?`<div class="wseg"><div class="seg" style="margin:0">${[['home','Übersicht'],['vals','Alle Werte'],['find','Befunde']].map(([k,l])=>`<button data-tab2="${k}" class="${tab===k?'on':''}">${l}</button>`).join('')}</div></div>`:'';$('#app').innerHTML=ws+f();bind();bindDiary();
+ $('#fab').style.display=((tab==='vals'||tab==='home'||tab==='find'))?'block':'none'}
 $('#fab').onclick=()=>tab==='find'?formFinding():formValue();
 
 // ---------- Übersicht ----------
-function vHome(){const L=latest(),g=groups();const c={low:0,high:0,ok:0};L.forEach(v=>{const s=status(v);if(c[s]!=null)c[s]++});
- const ex=S.values.some(v=>v.example)||S.findings.some(v=>v.example);
- let h=`<h1>Übersicht</h1><p class="sub">${new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}${ex?' <span class="ex">BEISPIELDATEN AKTIV</span>':''}</p>`;
+function vHome(){const L=latest(),g=groups();const c={red:0,yel:0,grn:0};L.forEach(v=>{const s=ost(v);if(s==='low'||s==='high')c.red++;else if(s==='sub'||s==='sup')c.yel++;else if(s!=='na')c.grn++});
+ const ex=S.values.some(v=>v.example)||S.findings.some(v=>v.example)||S.diary.some(v=>v.example);
+ let h=`<h1>Übersicht</h1><p class="sub">${new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}${ex?' <span class="ex">BEISPIELDATEN AKTIV</span>':''}</p>`;h+=bodyCard();
  if(!S.values.length&&!S.findings.length){h+=`<div class="card"><b>Willkommen 👋</b><p style="margin:6px 0 10px;font-size:15px">Hier sammelst du Laborwerte und Befunde all deiner Ärztinnen und Ärzte – nur auf diesem Gerät gespeichert. Tippe auf <b>+</b>, um den ersten Wert einzutragen, oder probiere die App mit Beispieldaten aus.</p><button class="btno full" data-act="loadex">Beispieldaten laden</button></div>`}
- else{h+=`<div class="stats"><div class="tile"><div class="big" style="color:var(--blue)">${c.low}</div><div class="mt">niedrig</div></div><div class="tile"><div class="big" style="color:var(--green)">${c.ok}</div><div class="mt">normal</div></div><div class="tile"><div class="big" style="color:var(--pink)">${c.high}</div><div class="mt">hoch</div></div></div>`;
- const ord={high:0,low:0,na:1,ok:2};const sorted=L.slice().sort((a,b)=>ord[status(a)]-ord[status(b)]||String(a.name).localeCompare(b.name));
- h+=`<h2>Aktuelle Werte</h2><div class="grid">`+sorted.map(v=>{const s=status(v),k=v.key||('x:'+norm(v.name));return `<div class="tile tap" data-marker="${esc(k)}"><div class="nm">${esc(v.name)}</div><div class="big" style="color:${s==='ok'?'var(--tx)':SC[s]}">${fmt(v.value)} <small>${esc(v.unit)}</small></div><span class="pill s-${s}">${SL[s]}</span> <span class="mt">${fdate(v.date)}</span>${spark(g[k])||'<div style="height:34px"></div>'}</div>`}).join('')+`</div>`;}
- h+=`<h3>Daten &amp; Sicherung</h3><div class="list">
- <div class="row tap" data-act="dagmar"><div class="grow"><div class="nm">📋 Für Dagmar kopieren</div><div class="mt">Textzusammenfassung aller Werte & Befunde</div></div></div>
- <div class="row tap" data-act="export"><div class="grow"><div class="nm">⬇️ Backup exportieren (JSON)</div><div class="mt">inkl. Anhänge</div></div></div>
- <div class="row tap" data-act="import"><div class="grow"><div class="nm">⬆️ Backup importieren</div><div class="mt">ergänzt/überschreibt gleiche Einträge</div></div></div>
- <div class="row tap" data-act="loadex"><div class="grow"><div class="nm">🧪 Beispieldaten laden</div><div class="mt">deutlich als „Beispiel“ markiert</div></div></div>
- <div class="row tap" data-act="delex"><div class="grow"><div class="nm" style="color:var(--red)">Beispieldaten löschen</div></div></div>
- <div class="row tap" data-act="delall"><div class="grow"><div class="nm" style="color:var(--red)">Alle Daten löschen</div></div></div></div>
- <p class="hint">🔒 Alle Daten bleiben ausschließlich auf diesem Gerät (IndexedDB). Keine Server, kein Tracking. Tipp: regelmäßig ein Backup exportieren – wenn Safari die Website-Daten löscht, sind sonst auch die Werte weg.</p>
- <input type="file" id="impf" accept="application/json,.json" style="display:none">`;
+ else{h+=`<div class="stats"><div class="tile"><div class="big" style="color:var(--green)">${c.grn}</div><div class="mt">optimal/ok</div></div><div class="tile"><div class="big" style="color:#d4a800">${c.yel}</div><div class="mt">nicht optimal</div></div><div class="tile"><div class="big" style="color:var(--red)">${c.red}</div><div class="mt">außerhalb</div></div></div><p class="hint">🟢 optimal · 🟡 im Referenzbereich, nicht optimal · 🔴 außerhalb. <a href="#" data-act="rinfo" style="color:var(--blue)">Wie funktionieren die Bereiche?</a></p>`;
+ const ord={high:0,low:0,sub:1,sup:1,na:2,ref:3,ok:3};const sorted=L.slice().sort((a,b)=>ord[ost(a)]-ord[ost(b)]||String(a.name).localeCompare(b.name));
+ h+=`<h2>Aktuelle Werte</h2><div class="grid">`+sorted.map(v=>{const s=ost(v),k=v.key||('x:'+norm(v.name));return `<div class="tile tap" data-info="${v.id}"><div class="nm">${esc(v.name)}</div><div class="big" style="color:${s==='ok'||s==='ref'?'var(--tx)':SC[s]}">${fmt(v.value)} <small>${esc(v.unit)}</small></div><span class="pill s-${s}">${SL[s]}</span> <span class="mt">${fdate(v.date)}</span>${spark(g[k])||'<div style="height:34px"></div>'}</div>`}).join('')+`</div>`;}
+ h+=`<button class="btn2 full" data-tab2="mehr">Profil, Export &amp; Fragen → Mehr</button>`;
  return h}
 
 // ---------- Werte ----------
@@ -235,14 +294,14 @@ let q='';
 function vVals(){const g=groups();
  if(sub){const arr=g[sub]||[];if(!arr.length){sub=null;return vVals()}const L=arr[arr.length-1],c=CK[L.key];
   return `<button class="lnk" data-act="back">‹ Werte</button><h1>${esc(L.name)}</h1><p class="sub">${c?esc(c.grp)+(c.note?' · '+esc(c.note):''):'eigener Marker'}</p>
-  <div class="card">${spark(arr,300,120)||'<p class="mt">Ab zwei Messungen erscheint hier ein Verlauf.</p>'}<p class="mt" style="margin:8px 0 0">Referenz: ${esc(rtxt(L))}</p></div>
-  <div class="list">${arr.slice().reverse().map(v=>{const s=status(v);return `<div class="row tap" data-edit="${v.id}"><span class="dot" style="background:${SC[s]}"></span><div class="grow"><div class="nm">${fdate(v.date)}${v.example?'<span class="ex">Beispiel</span>':''}</div><div class="mt">${esc(v.lab||'')}${v.note?' · '+esc(v.note):''}</div></div><div class="val">${fmt(v.value)} <span class="mt">${esc(v.unit)}</span><br><span class="pill s-${s}">${SL[s]}</span></div></div>`}).join('')}</div>
+  <div class="card">${spark(arr,300,120)||'<p class="mt">Ab zwei Messungen erscheint hier ein Verlauf.</p>'}<p class="mt" style="margin:8px 0 0">Referenz: ${esc(rtxt(L))}${optRange(L)?' · Optimal: '+esc(rr(optRange(L).lo,optRange(L).hi,L.unit)):''}</p></div><div class="card tap" data-info="${L.id}"><b>Letzter Wert: ${fmt(L.value)} ${esc(L.unit)} – ${CATTXT[ost(L)]}</b>${bar(L)}<p class="mt">Antippen für Erklärung ›</p></div>
+  <div class="list">${arr.slice().reverse().map(v=>{const s=ost(v);return `<div class="row tap" data-info="${v.id}"><span class="dot" style="background:${SC[s]}"></span><div class="grow"><div class="nm">${fdate(v.date)}${v.example?'<span class="ex">Beispiel</span>':''}</div><div class="mt">${esc(v.lab||'')}${v.note?' · '+esc(v.note):''}</div></div><div class="val">${fmt(v.value)} <span class="mt">${esc(v.unit)}</span><br><span class="pill s-${s}">${SL[s]}</span></div></div>`}).join('')}</div>
   <button class="btn2 full" data-act="addsame" data-name="${esc(L.name)}">+ Neuer ${esc(L.name)}-Wert</button>`}
  const keys=Object.keys(g).filter(k=>!q||norm(g[k][0].name).includes(norm(q))).sort((a,b)=>{const A=CK[g[a][0].key],B=CK[g[b][0].key];return ((A?.grp||'zz')+g[a][0].name).localeCompare((B?.grp||'zz')+g[b][0].name)});
  let h=`<h1>Werte</h1><p class="sub">${S.values.length} Messungen · ${Object.keys(g).length} Marker</p><input class="search" id="qs" placeholder="Suchen" value="${esc(q)}">`;
  if(!keys.length)return h+`<div class="empty">Noch keine Werte.<br>Tippe auf <b>+</b>.</div>`;
  let grp=null;h+='';let out='';
- for(const k of keys){const arr=g[k],L=arr[arr.length-1],s=status(L),gr=CK[L.key]?.grp||'Eigene Marker';
+ for(const k of keys){const arr=g[k],L=arr[arr.length-1],s=ost(L),gr=CK[L.key]?.grp||'Eigene Marker';
   if(gr!==grp){if(grp!==null)out+='</div>';out+=`<h3>${esc(gr)}</h3><div class="list">`;grp=gr}
   out+=`<div class="row tap" data-marker="${esc(k)}"><span class="dot" style="background:${SC[s]}"></span><div class="grow"><div class="nm">${esc(L.name)}</div><div class="mt">${fdate(L.date)} · ${arr.length}× gemessen</div></div><div class="val">${fmt(L.value)} <span class="mt">${esc(L.unit)}</span></div></div>`}
  return h+out+'</div>'}
@@ -259,7 +318,7 @@ function formValue(v,preName){const e=v||{};const isNew=!v;
  <datalist id="labs">${[...new Set(S.values.map(x=>x.lab).concat(S.findings.map(x=>x.doctor)).filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
  ${isNew?'':'<button class="btnd full" id="dl">Eintrag löschen</button>'}`);
  const fn=$('#fn'),fu=$('#fu');
- const info=()=>{const c=findCat(fn.value);$('#rinfo').innerHTML=c?`Typischer Bereich (Erwachsene, Frau): <b>${fmt(c.lo)}${c.hi<999?'–'+fmt(c.hi):'+'} ${esc(c.unit)}</b>${c.note?' · '+esc(c.note):''}<br>Labore haben eigene Bereiche – trage den Bereich vom Befund ein, falls er abweicht oder die Einheit anders ist.`:'Eigener Marker: bitte Referenzbereich des Labors eintragen, damit der Status berechnet werden kann.'};
+ const info=()=>{const c=findCat(fn.value);$('#rinfo').innerHTML=c?`Typischer Bereich (Erwachsene, ${SEXL[sexKey()]}): <b>${esc(rr(crange(c).lo,crange(c).hi,c.unit))}</b>${optInfo(c)?' · Optimal: <b>'+esc(rr(optInfo(c).lo,optInfo(c).hi,c.unit))+'</b>':''}${c.note?' · '+esc(c.note):''}<br>Labore haben eigene Bereiche – trage den Bereich vom Befund ein, falls er abweicht oder die Einheit anders ist.`:'Eigener Marker: bitte Referenzbereich des Labors eintragen, damit der Status berechnet werden kann.'};
  fn.oninput=()=>{const n=norm(fn.value);const m=n?CAT.filter(c=>norm(c.name).includes(n)||c.syn.split(',').some(x=>x&&norm(x).includes(n))).slice(0,8):[];
   $('#ac').innerHTML=m.length?'<div class="ac">'+m.map(c=>`<div data-k="${c.key}">${esc(c.name)} <small>${esc(c.unit)} · ${esc(c.grp)}</small></div>`).join('')+'</div>':'';
   $('#ac').querySelectorAll('[data-k]').forEach(d=>d.onclick=()=>{const c=CK[d.dataset.k];fn.value=c.name;fu.value=c.unit;$('#ac').innerHTML='';info();$('#fv').focus()});info()};
@@ -402,12 +461,13 @@ function vAna(){if(!S.values.length&&!S.findings.length)return `<h1>Auswertung</
  const R=analyse(),seg=sub||'all';
  const blk=(t,arr)=>arr.length?`<h2>${t}</h2>`+arr.join(''):'';
  const pat=R.patterns.map(p=>`<div class="card ins ${p.lvl}"><b>${esc(p.title)}</b><p>${esc(p.text)}</p></div>`);
- const fl=R.flags.map(({x,s})=>`<div class="row"><span class="dot" style="background:${SC[s]}"></span><div class="grow"><div class="nm">${esc(x.name)}</div><div class="mt">${fdate(x.date)} · Ref. ${esc(rtxt(x))}</div></div><div class="val">${fmt(x.value)} <span class="mt">${esc(x.unit)}</span><br><span class="pill s-${s}">${SL[s]}</span></div></div>`);
+ const fl=R.flags.map(({x,s})=>`<div class="row tap" data-info="${x.id}"><span class="dot" style="background:${SC[s]}"></span><div class="grow"><div class="nm">${esc(x.name)}</div><div class="mt">${fdate(x.date)} · Ref. ${esc(rtxt(x))}</div></div><div class="val">${fmt(x.value)} <span class="mt">${esc(x.unit)}</span><br><span class="pill s-${s}">${SL[s]}</span></div></div>`);
  const df=R.defs.map(d=>`<div class="card ins warn"><b>${esc(d.title)}</b><p>${esc(d.text)}</p><div class="sup">💊 <b style="display:inline">Mögliche Ergänzung:</b> ${esc(d.sup)}</div></div>`);
  const ts=R.tests.map(t=>`<div class="row"><div class="grow"><div class="nm">🔬 ${esc(t.title)}</div><div class="mt">${esc(t.text)}</div></div></div>`);
- let h=`<h1>Auswertung</h1><div class="disc">⚠️ <b>Keine Diagnose.</b> Regelbasierte Hinweise auf Basis typischer Referenzbereiche – Labore und Lebenssituation unterscheiden sich. Bitte alles mit deiner Ärztin besprechen; Nahrungsergänzungen und Dosierungen nur nach Rücksprache.</div>
+ let h=`<h1>Auswertung</h1><div class="disc">⚠️ <b>Keine Diagnose.</b> Regelbasierte Hinweise auf Basis typischer Referenzbereiche (Profil: ${SEXL[sexKey()]}) – Labore und Lebenssituation unterscheiden sich. Bitte alles mit deiner Ärztin besprechen; Nahrungsergänzungen und Dosierungen nur nach Rücksprache.</div>
  <div class="seg">${[['all','Alles'],['flags','Auffällig'],['pat','Muster'],['def','Mängel'],['test','Tests']].map(([k,l])=>`<button data-seg="${k}" class="${seg===k?'on':''}">${l}</button>`).join('')}</div>`;
  if(seg==='all'||seg==='flags')h+=fl.length?`<h2>Außerhalb des Bereichs</h2><div class="list">${fl.join('')}</div>`:(seg==='flags'?'<div class="empty">Keine Werte außerhalb des Referenzbereichs 🎉</div>':'');
+ {const so=latest().filter(v=>['sub','sup'].includes(ost(v)));if((seg==='all'||seg==='flags')&&so.length)h+=`<h2>Im Referenzbereich, aber nicht optimal</h2><div class="list">${so.map(x=>`<div class="row tap" data-info="${x.id}"><span class="dot" style="background:#f5c400"></span><div class="grow"><div class="nm">${esc(x.name)}</div><div class="mt">Optimal: ${esc(rr(optRange(x).lo,optRange(x).hi,x.unit))}</div></div><div class="val">${fmt(x.value)} <span class="mt">${esc(x.unit)}</span><br><span class="pill s-${ost(x)}">${SL[ost(x)]}</span></div></div>`).join('')}</div>`}
  if(seg==='all'||seg==='pat')h+=blk('Muster &amp; Zusammenhänge',pat)||(seg==='pat'?'<div class="empty">Keine auffälligen Muster.</div>':'');
  if(seg==='all'||seg==='def')h+=blk('Mögliche Mängel &amp; Ergänzungen',df)||(seg==='def'?'<div class="empty">Keine Hinweise auf Mängel.</div>':'');
  if(seg==='all'||seg==='test')h+=ts.length?`<h2>Mögliche weitere Tests &amp; offene Fragen</h2><div class="list">${ts.join('')}</div>`:(seg==='test'?'<div class="empty">Keine Vorschläge.</div>':'');
@@ -425,7 +485,7 @@ function vQ(){const R=(S.values.length||S.findings.length)?analyse():{questions:
 // ---------- Export / Import / Dagmar ----------
 const b64=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)});
 async function doExport(){const fs=[];for(const f of S.findings){fs.push({...f,file:f.file?await b64(f.file):null})}
- const data={app:'Meine Werte',version:1,exported:new Date().toISOString(),values:S.values,findings:fs,questions:S.questions};
+ const data={app:'Meine Werte',version:2,exported:new Date().toISOString(),values:S.values,findings:fs,questions:S.questions,diary:S.diary,meta:S.meta};
  const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'});const name='meine-werte-backup-'+today()+'.json';
  const file=new File([blob],name,{type:'application/json'});
  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:name});return}catch(e){if(e.name==='AbortError')return}}
@@ -433,14 +493,15 @@ async function doExport(){const fs=[];for(const f of S.findings){fs.push({...f,f
 async function doImport(file){try{const d=JSON.parse(await file.text());if(!d||!Array.isArray(d.values))throw 0;
  for(const v of d.values)await put('values',v);
  for(const f of d.findings||[]){if(f.file&&typeof f.file==='string'){f.file=await (await fetch(f.file)).blob()}await put('findings',f)}
- for(const x of d.questions||[])await put('questions',x);await load();render();toast('Import: '+d.values.length+' Werte, '+(d.findings||[]).length+' Befunde')}catch(e){alert('Datei konnte nicht gelesen werden.')}}
-function summary(){const g=groups();let t='MEINE LABORWERTE & BEFUNDE (Stand '+fdate(today())+')\nHinweis: Frau, ca. 40er. Referenzbereiche = typisch bzw. vom Labor (markiert).\n\n== LABORWERTE (chronologisch je Marker) ==\n';
+ for(const x of d.questions||[])await put('questions',x);for(const x of d.diary||[])await put('diary',x);for(const x of d.meta||[])await put('meta',x);await load();render();toast('Import: '+d.values.length+' Werte, '+(d.findings||[]).length+' Befunde, '+(d.diary||[]).length+' Tagebuch-Tage')}catch(e){alert('Datei konnte nicht gelesen werden.')}}
+function profTxt(){const p=prof(),b=bmi();return 'Profil: '+SEXL[p.sex]+(age()?', '+age()+' Jahre':'')+(p.height?', '+fmt(p.height)+' cm':'')+(curWeight()?', '+fmt(curWeight())+' kg':'')+(b?', BMI '+fmt(+b.toFixed(1)):'')+'.'}
+function summary(){const g=groups();let t='MEINE LABORWERTE & BEFUNDE (Stand '+fdate(today())+')\n'+profTxt()+'\nReferenzbereiche = typisch (geschlechtsspezifisch) bzw. vom Labor (markiert); Opt. = präventiver Optimalbereich (teils umstritten).\n\n== LABORWERTE (chronologisch je Marker) ==\n';
  const ks=Object.keys(g).sort((a,b)=>((CK[g[a][0].key]?.grp||'zz')+g[a][0].name).localeCompare((CK[g[b][0].key]?.grp||'zz')+g[b][0].name));let gr=null;
  for(const k of ks){const a=g[k],G=CK[a[0].key]?.grp||'Sonstige';if(G!==gr){t+='\n['+G+']\n';gr=G}
-  t+='- '+a[0].name+' (Ref. '+rtxt(a[a.length-1])+'): '+a.map(v=>fdate(v.date)+': '+fmt(v.value)+' '+v.unit+(status(v)==='low'?' ↓':status(v)==='high'?' ↑':'')+(v.lab?' ['+v.lab+']':'')+(v.note?' ('+v.note+')':'')+(v.example?' {BEISPIEL}':'')).join('; ')+'\n'}
+  const oo=optRange(a[a.length-1]);t+='- '+a[0].name+' (Ref. '+rtxt(a[a.length-1])+(oo?'; Opt. '+rr(oo.lo,oo.hi,a[0].unit).trim():'')+'): '+a.map(v=>fdate(v.date)+': '+fmt(v.value)+' '+v.unit+(status(v)==='low'?' ↓':status(v)==='high'?' ↑':ost(v)==='sub'?' (unter opt.)':ost(v)==='sup'?' (über opt.)':'')+(v.lab?' ['+v.lab+']':'')+(v.note?' ('+v.note+')':'')+(v.example?' {BEISPIEL}':'')).join('; ')+'\n'}
  if(S.findings.length){t+='\n== BEFUNDE ==\n';for(const f of S.findings.slice().sort((a,b)=>a.date<b.date?-1:1))t+='- '+fdate(f.date)+' | '+f.category+(f.title?' | '+f.title:'')+(f.doctor?' | '+f.doctor:'')+(f.example?' {BEISPIEL}':'')+'\n  '+(f.text||'(nur Anhang)').replace(/\n/g,'\n  ')+(f.fileName?'\n  Anhang: '+f.fileName:'')+'\n'}
  if(S.questions.length)t+='\n== MEINE OFFENEN FRAGEN ==\n'+S.questions.filter(x=>!x.done).map(x=>'- '+x.text).join('\n')+'\n';
- t+='\nBitte analysiere die Werte im Zusammenhang (Muster, mögliche Mängel, sinnvolle weitere Tests, Fragen an die Ärztin).';return t}
+ t+=diarySummary();t+='\nBitte analysiere die Werte im Zusammenhang (Muster, mögliche Mängel, sinnvolle weitere Tests, Fragen an die Ärztin).';return t}
 async function copy(t){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast('In die Zwischenablage kopiert')}
 
 // ---------- Beispieldaten (klar markiert) ----------
@@ -452,27 +513,177 @@ async function loadExample(){const d=(m)=>{const x=new Date();x.setMonth(x.getMo
  for(const [n,val,m,lab] of V){const c=findCat(n);await put('values',{id:uid(),key:c.key,name:c.name,value:val,unit:c.unit,date:d(m),lab,note:'BEISPIEL',refLow:null,refHigh:null,example:true})}
  await put('findings',{id:uid(),category:'Knochendichte (DXA)',title:'BEISPIEL: Knochendichte LWS/Hüfte',date:d(3),doctor:'Beispiel-Radiologie',text:'BEISPIELTEXT: LWS T-Score -1,3; Hüfte T-Score -0,9. Beurteilung: Osteopenie der LWS. Kontrolle in 2 Jahren empfohlen.',example:true});
  await put('findings',{id:uid(),category:'Ultraschall',title:'BEISPIEL: Schilddrüsen-Sono',date:d(1),doctor:'Beispiel-Endokrinologie',text:'BEISPIELTEXT: Echoarmes, inhomogenes Parenchym, Volumen 9 ml. Kein Knoten.',example:true});
+ const ds=dayList(7);ds.forEach(async()=>0);for(let i=0;i<ds.length-1;i++){if(S.diary.some(x=>x.id===ds[i]))continue;const n=newDay(ds[i]);Object.assign(n,{pain:[3,5,2,6,4,1][i],loc:[['Kopf'],['Rücken','Nacken/HWS'],['Kopf'],['Unterleib'],['Rücken'],[]][i],well:[3,2,4,2,3,4][i],mood:[3,2,4,3,3,5][i],energy:[3,2,4,2,3,4][i],stress:[3,4,2,4,3,2][i],sleepq:[3,2,4,2,4,5][i],sleeph:[6.5,5,7.5,5.5,7,8][i],digest:3,night:[false,true,false,true,false,false][i],period:i===3?'mittel':'keine',sym:i%2?['Müdigkeit']:['Kopfschmerz'],water:5,caf:2,note:'BEISPIEL',example:true});await put('diary',n)}
  await load();render();toast('Beispieldaten geladen')}
-async function delExample(){for(const v of S.values.filter(x=>x.example))await del('values',v.id);for(const f of S.findings.filter(x=>x.example))await del('findings',f.id);await load();render();toast('Beispieldaten gelöscht')}
+async function delExample(){for(const v of S.values.filter(x=>x.example))await del('values',v.id);for(const f of S.findings.filter(x=>x.example))await del('findings',f.id);for(const f of S.diary.filter(x=>x.example))await del('diary',f.id);await load();render();toast('Beispieldaten gelöscht')}
 
+// ---------- Profil ----------
+const SEXL={w:'weiblich',m:'männlich',d:'divers'};
+function prof(){return S.meta.find(x=>x.id==='profile')||{id:'profile',sex:'w',birth:null,height:null,weight:null}}
+function age(){const p=prof();return p.birth?new Date().getFullYear()-p.birth:null}
+function curWeight(){const d=S.diary.filter(x=>x.weight).sort((a,b)=>a.id<b.id?-1:1);return d.length?d[d.length-1].weight:prof().weight}
+function bmi(){const p=prof(),w=curWeight();return p.height&&w?w/((p.height/100)**2):null}
+function bmiTxt(b){return b==null?'':b<18.5?'Untergewicht':b<25?'Normalgewicht':b<30?'Übergewicht':'Adipositas'}
+function formProfile(){const p=prof();
+ openSheet(`<div class="sheet-h"><button class="lnk" data-act="close">Abbrechen</button><b>Profil</b><button class="lnk" id="psv" style="font-weight:700">Sichern</button></div>
+ <h3>Geschlecht</h3><div class="chips" id="psex">${Object.entries(SEXL).map(([k,l])=>`<button class="chip ${p.sex===k?'on':''}" data-v="${k}">${l}</button>`).join('')}</div>
+ <p class="hint">Bestimmt die Referenz- und Optimalbereiche (z. B. Ferritin, Hämoglobin, Kreatinin, Hormone). Bei „divers“ werden die weiblichen Bereiche verwendet – bitte mit der Ärztin klären, welche passen.</p>
+ <div class="form"><label class="f"><span>Geburtsjahr</span><input id="pby" inputmode="numeric" value="${p.birth||''}" placeholder="z. B. 1984"></label>
+ <div class="two"><label class="f"><span>Größe (cm)</span><input id="pht" inputmode="decimal" value="${p.height?fmt(p.height):''}"></label><label class="f"><span>Gewicht (kg)</span><input id="pwt" inputmode="decimal" value="${p.weight?fmt(p.weight):''}"></label></div></div>
+ <p class="hint">Gewicht kannst du zusätzlich täglich unter „Heute“ eintragen – dann entsteht ein Verlauf.</p>`);
+ let sex=p.sex;$('#psex').querySelectorAll('button').forEach(b=>b.onclick=()=>{sex=b.dataset.v;$('#psex').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))});
+ $('#psv').onclick=async()=>{const by=num($('#pby').value);await put('meta',{id:'profile',sex,birth:by&&by>1900&&by<2100?Math.round(by):null,height:num($('#pht').value),weight:num($('#pwt').value)});await load();closeSheet();toast('Profil gespeichert');render()}}
+
+// ---------- Bereiche: Erklärung ----------
+const CATTXT={low:'zu niedrig',sub:'im Referenzbereich, aber unter optimal',ok:'optimal',sup:'im Referenzbereich, aber über optimal',high:'zu hoch',ref:'im Referenzbereich',na:'ohne Bereich'};
+const CATEXP={low:'Der Wert liegt unter dem Referenzbereich. Das sollte ärztlich eingeordnet werden – oft steckt ein Mangel oder eine behandelbare Ursache dahinter.',
+ sub:'Laut Labor unauffällig, aber unter dem Bereich, der in der Prävention als günstig gilt. Kein Grund zur Sorge – eher ein Hinweis, das im Blick zu behalten und mit der Ärztin zu besprechen.',
+ ok:'Der Wert liegt im Bereich, der langfristig als günstig gilt. 👍',
+ sup:'Laut Labor unauffällig, aber über dem Bereich, der in der Prävention als günstig gilt. Beobachten und ggf. mit der Ärztin besprechen.',
+ high:'Der Wert liegt über dem Referenzbereich. Das sollte ärztlich eingeordnet werden.',
+ ref:'Der Wert liegt im Referenzbereich. Für diesen Marker gibt es keinen allgemein anerkannten engeren Optimalbereich.',
+ na:'Für diesen Wert ist kein Bereich hinterlegt. Trage den Bereich von deinem Befund ein.'};
+function rr(a,b,u){const A=a!=null&&a>0?fmt(a):null,B=b!=null&&b<999?fmt(b):null;return (A&&B?A+'–'+B:A?'≥ '+A:B?'< '+B:'–')+' '+(u||'')}
+function bar(v){const r=range(v),o=optRange(v);if(!r)return'';const pts=[v.value,r.lo,r.hi<999?r.hi:null,o&&o.lo,o&&o.hi<999?o.hi:null].filter(x=>x!=null);
+ let mn=Math.min(...pts),mx=Math.max(...pts);const pad=(mx-mn||1)*.25;mn=Math.max(0,mn-pad);mx+=pad;const X=x=>Math.max(0,Math.min(100,(x-mn)/(mx-mn)*100));
+ const rl=X(r.lo??mn),rh=X(r.hi!=null&&r.hi<999?r.hi:mx);let ob='';if(o){const ol=X(o.lo??mn),oh=X(o.hi!=null&&o.hi<999?o.hi:mx);ob=`<div style="position:absolute;top:0;bottom:0;left:${ol}%;width:${oh-ol}%;background:var(--green);border-radius:6px"></div>`}
+ return `<div style="position:relative;height:16px;background:#ffd6d6;border-radius:8px;margin:22px 0 6px"><div style="position:absolute;top:0;bottom:0;left:${rl}%;width:${rh-rl}%;background:#ffe27a;border-radius:6px"></div>${ob}
+ <div style="position:absolute;top:-8px;left:calc(${X(v.value)}% - 2px);width:4px;height:32px;background:var(--tx);border-radius:2px"></div><div style="position:absolute;top:-24px;left:calc(${X(v.value)}% - 30px);width:60px;text-align:center;font-size:12px;font-weight:700">${fmt(v.value)}</div></div>
+ <div class="mt" style="display:flex;gap:10px;flex-wrap:wrap"><span><span class="dot" style="display:inline-block;background:#e5383b"></span> außerhalb</span><span><span class="dot" style="display:inline-block;background:#f5c400"></span> Referenz</span><span><span class="dot" style="display:inline-block;background:var(--green)"></span> optimal</span></div>`}
+function infoSheet(v){if(!v)return;const r=range(v),o=optRange(v),k=ost(v),c=CK[v.key];const oi=c?optInfo(c):null;
+ openSheet(`<div class="sheet-h"><button class="lnk" data-act="close">Schließen</button><b>${esc(v.name)}</b><button class="lnk" id="ied">Bearbeiten</button></div>
+ <div class="card"><div style="font-size:15px">Dein Wert (${fdate(v.date)}): <b style="font-size:22px">${fmt(v.value)} ${esc(v.unit)}</b>${v.example?' <span class="ex">BEISPIEL</span>':''}</div>
+ <div style="font-size:15px;margin-top:6px">Laborreferenz: <b>${r?esc(rr(r.lo,r.hi,v.unit)):'–'}</b>${r&&r.own?' (von deinem Labor)':r?' (typisch, '+SEXL[sexKey()]+')':''}<br>Optimalbereich: <b>${o?esc(rr(o.lo,o.hi,v.unit)):'keiner etabliert'}</b></div>
+ ${bar(v)}
+ <p style="margin:12px 0 4px"><span class="pill s-${k}">${CATTXT[k]}</span></p><p style="font-size:15px;margin:4px 0">Du liegst im Bereich <b>„${CATTXT[k]}“</b>. ${CATEXP[k]}</p></div>
+ ${c?`<div class="card"><b>Was ist ${esc(c.name)}?</b><p style="font-size:15px;margin:6px 0">${esc(DESC[c.key]||('Laborwert aus der Gruppe '+c.grp+'.'))}</p>${oi?`<p style="font-size:15px;margin:6px 0"><b>Zielbereich:</b> ${esc(rr(oi.lo,oi.hi,c.unit))}</p><p class="mt">${esc(oi.src)}</p>`:'<p class="mt">Kein allgemein anerkannter Optimalbereich – hier gilt der Referenzbereich.</p>'}${c.note?`<p class="mt">Hinweis: ${esc(c.note)}</p>`:''}</div>`:''}
+ <p class="hint">⚠️ Keine medizinische Beratung. Optimalbereiche stammen aus Präventions-/Mikronährstoffliteratur und sind teils umstritten. Der Bereich auf deinem Laborbefund hat Vorrang.</p>`);
+ $('#ied').onclick=()=>{closeSheet();formValue(v)}}
+const RANGEINFO=`<p><b>Referenzbereich</b> (vom Labor): Hier liegen ca. 95 % der gesunden Menschen. Er sagt vor allem „vermutlich nicht krank“ – nicht unbedingt „ideal“.</p>
+<p><b>Optimalbereich</b>: Ein engerer Bereich, der in Leitlinien oder in der Präventions- und Mikronährstoffmedizin als langfristig günstig gilt. Die Belege dafür sind unterschiedlich stark; wo sie umstritten sind, steht das beim Wert dabei. Nicht für jeden Marker gibt es einen.</p>
+<p><b>Farben:</b> 🟢 optimal (bzw. im Referenzbereich, wenn es keinen Optimalbereich gibt) · 🟡 im Referenzbereich, aber nicht optimal · 🔴 außerhalb des Referenzbereichs.</p>
+<p><b>Dein Labor hat Vorrang:</b> Labore messen unterschiedlich. Trage beim Wert „Ref. unten/oben (Labor)“ von deinem Befund ein – dann gilt dieser Bereich.</p>
+<p>Die Bereiche hängen von deinem Profil (Geschlecht) ab. ⚠️ Keine medizinische Beratung – bitte alles mit deiner Ärztin besprechen.</p>`;
+
+// ---------- Tagebuch ----------
+const D_LOC=['Kopf','Nacken/HWS','Schultern','Rücken','Gelenke','Bauch','Unterleib','Sonstiges'];
+const D_ART=['stechend','dumpf','brennend','ziehend','pochend'];
+const D_SYM=['Kopfschmerz','Schwindel','Übelkeit','Müdigkeit','Herzrasen','Schwitzen/Hitzewallung','Konzentration schwach','Kribbeln/Taubheit'];
+const D_MOV=['Joggen','Bodypump','Spaziergang','keine'];
+const D_PER=['keine','leicht','mittel','stark'];
+const D_SC5={well:['Allgemeinbefinden',['😣','🙁','😐','🙂','😄']],mood:['Stimmung',['😢','😕','😐','🙂','😊']],energy:['Energie',['🪫','😴','😐','💪','⚡️']],stress:['Stress',['😌','🙂','😐','😬','🤯']],sleepq:['Schlafqualität',['😫','😕','😐','🙂','😴']],digest:['Verdauung',['😖','🙁','😐','🙂','👍']]};
+let dDate=null,dTmp=null;
+function medList(){const m=S.meta.find(x=>x.id==='meds');return m?m.list:['Magnesium','Vitamin D','Eisen','Omega-3','Ibuprofen']}
+function newDay(d){return {id:d,pain:null,loc:[],art:[],well:null,mood:null,energy:null,stress:null,sleepq:null,sleeph:null,digest:null,sym:[],period:null,move:[],night:null,alc:0,caf:0,water:0,meds:[],medtxt:'',weight:null,note:''}}
+function painCol(p){if(p==null)return'#e5e5ea';const h=120-p*12;return `hsl(${h},70%,${p===0?75:55}%)`}
+function dayList(n=30){const a=[];for(let i=n-1;i>=0;i--){const x=new Date();x.setHours(12);x.setDate(x.getDate()-i);a.push(x.toISOString().slice(0,10))}return a}
+function vDiary(){if(!dDate)dDate=today();const ex=S.diary.find(x=>x.id===dDate);if(!dTmp||dTmp.id!==dDate)dTmp=ex?JSON.parse(JSON.stringify(ex)):newDay(dDate);const e=dTmp;
+ const chips=(f,opts)=>`<div class="chips">${opts.map(o=>`<button class="chip ${e[f].includes(o)?'on':''}" data-dm="${f}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+ const one=(f,opts,lbl)=>`<div class="chips">${opts.map((o,i)=>`<button class="chip ${e[f]===(lbl?lbl[i]:o)?'on':''}" data-d1="${f}" data-v="${esc(lbl?lbl[i]:o)}">${esc(o)}</button>`).join('')}</div>`;
+ const sc5=f=>`<div class="emo">${D_SC5[f][1].map((x,i)=>`<button class="${e[f]===i+1?'on':''}" data-d5="${f}" data-v="${i+1}">${x}<small>${i+1}</small></button>`).join('')}</div>`;
+ const step=(f,lbl,st=1,dec=false)=>`<div class="row"><div class="grow nm">${lbl}</div><button class="stp" data-ds="${f}" data-v="${-st}">−</button><div class="val" style="min-width:52px;text-align:center" id="ds_${f}">${e[f]==null?'–':dec?fmt(e[f]):e[f]}</div><button class="stp" data-ds="${f}" data-v="${st}">＋</button></div>`;
+ const isT=dDate===today();
+ let h=`<h1>Heute</h1><p class="sub">Schmerz- &amp; Gesundheitstagebuch${ex&&ex.example?' <span class="ex">BEISPIEL</span>':''}</p>
+ <div class="card" style="display:flex;align-items:center;gap:8px;padding:8px 10px"><button class="stp" data-dd="-1">‹</button><label class="grow" style="text-align:center;font-weight:700">${isT?'Heute, ':''}${new Date(dDate+'T12:00').toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'long'})}<input type="date" id="ddate" value="${dDate}" max="${today()}" style="display:block;margin:2px auto 0;border:0;font:inherit;font-size:13px;color:var(--blue);background:none"></label><button class="stp" data-dd="1" ${isT?'disabled style="opacity:.3"':''}>›</button></div>
+ ${ex?'<p class="hint">✏️ Eintrag vorhanden – du bearbeitest ihn.</p>':''}
+ <h3>Schmerzstärke</h3><div class="card"><div class="pain">${[...Array(11)].map((_,i)=>`<button class="${e.pain===i?'on':''}" data-d1n="pain" data-v="${i}" style="${e.pain===i?'background:'+painCol(i)+';color:#fff':''}">${i}</button>`).join('')}</div><div class="mt" style="display:flex;justify-content:space-between;margin-top:4px"><span>kein Schmerz</span><span>stärkster</span></div></div>
+ <h3>Schmerzort</h3>${chips('loc',D_LOC)}<h3>Schmerzart</h3>${chips('art',D_ART)}
+ ${Object.keys(D_SC5).filter(f=>f!=='digest'&&f!=='sleepq').map(f=>`<h3>${D_SC5[f][0]}</h3>${sc5(f)}`).join('')}
+ <h3>Schlaf</h3>${sc5('sleepq')}<div class="list">${step('sleeph','😴 Schlafdauer (Std.)',0.5,true)}</div>
+ <h3>Verdauung</h3>${sc5('digest')}
+ <h3>Symptome</h3>${chips('sym',D_SYM)}
+ <h3>Periode / Zyklus</h3>${one('period',D_PER)}
+ <h3>Bewegung</h3>${chips('move',D_MOV)}
+ <h3>Arbeit: Nachtschicht</h3>${one('night',['ja','nein'],[true,false])}
+ <h3>Getränke &amp; Gewicht</h3><div class="list">${step('alc','🍷 Alkohol (Gläser)')}${step('caf','☕️ Koffein (Tassen)')}${step('water','💧 Wasser (Gläser)')}${step('weight','⚖️ Gewicht (kg, optional)',0.1,true)}</div>
+ <h3>Medikamente / Supplements genommen</h3>${chips('meds',medList())}<div class="row" style="background:#fff;border-radius:12px;margin-top:6px"><input id="dmnew" placeholder="Mittel zur Liste hinzufügen …" style="flex:1;border:0;font:inherit;outline:0;background:none"><button class="lnk" id="dmadd" style="font-weight:700">＋</button></div>
+ <div class="form"><label class="f"><span>Weitere Mittel / Dosis (optional)</span><input id="dmt" value="${esc(e.medtxt)}"></label><label class="f"><span>Notiz (optional)</span><textarea id="dnote" rows="2">${esc(e.note)}</textarea></label></div>
+ <button class="btnp full" id="dsave" style="padding:16px">💾 Tag speichern</button>${ex?'<button class="btnd full" id="ddel">Eintrag löschen</button>':''}
+ ${vDiaryOverview()}
+ <h2>Einnahmeplan</h2><div class="card mt">💊 Kommt bald: Einnahmeplan für deine Supplements (Phase 2).</div>`;return h}
+function avg(a){a=a.filter(x=>x!=null);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null}
+function corr(xs,ys){const p=xs.map((x,i)=>[x,ys[i]]).filter(([x,y])=>x!=null&&y!=null);if(p.length<5)return null;const mx=avg(p.map(q=>q[0])),my=avg(p.map(q=>q[1]));let a=0,b=0,c=0;for(const [x,y] of p){a+=(x-mx)*(y-my);b+=(x-mx)**2;c+=(y-my)**2}return b&&c?a/Math.sqrt(b*c):null}
+function dspark(vals,max,col){const w=300,h=44;const X=i=>4+i*(w-8)/(vals.length-1),Y=v=>h-4-v*(h-8)/max;let segs=[],cur=[];vals.forEach((v,i)=>{if(v==null){if(cur.length)segs.push(cur);cur=[]}else cur.push(X(i)+','+Y(v))});if(cur.length)segs.push(cur);
+ return `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:${h}px;display:block">${segs.map(s=>s.length>1?`<polyline points="${s.join(' ')}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke"/>`:'').join('')}${vals.map((v,i)=>v==null?'':`<circle cx="${X(i)}" cy="${Y(v)}" r="2.4" fill="${col}"/>`).join('')}</svg>`}
+function observations(){const D=S.diary.slice().sort((a,b)=>a.id<b.id?-1:1),O=[];const M=Object.fromEntries(D.map(d=>[d.id,d]));
+ const after=[],notA=[];for(const d of D){if(d.pain==null)continue;const y=new Date(d.id+'T12:00');y.setDate(y.getDate()-1);const p=M[y.toISOString().slice(0,10)];if(!p||p.night==null)continue;(p.night?after:notA).push(d.pain)}
+ if(after.length>=2&&notA.length>=2){const a=avg(after),b=avg(notA);O.push(`Nach einer Nachtschicht lag dein Schmerz im Schnitt bei ${fmt(+a.toFixed(1))}, sonst bei ${fmt(+b.toFixed(1))} (${after.length} vs. ${notA.length} Tage)${Math.abs(a-b)>=1?' – ein möglicher Zusammenhang, den du beobachten kannst.':' – kein deutlicher Unterschied.'}`)}
+ const r=corr(D.map(d=>d.sleepq),D.map(d=>d.mood));if(r!=null)O.push(`Schlafqualität und Stimmung: ${r>0.4?'an Tagen mit besserem Schlaf war deine Stimmung tendenziell besser':r<-0.4?'eher gegenläufig':'kein klarer Zusammenhang erkennbar'} (r = ${fmt(+r.toFixed(2))}, ${D.filter(d=>d.sleepq&&d.mood).length} Tage).`);
+ const r2=corr(D.map(d=>d.stress),D.map(d=>d.pain));if(r2!=null&&Math.abs(r2)>0.4)O.push(`Stress und Schmerz ${r2>0?'steigen tendenziell gemeinsam':'verlaufen eher gegenläufig'} (r = ${fmt(+r2.toFixed(2))}).`);
+ const cnt={};for(const d of D)for(const s of d.sym||[])cnt[s]=(cnt[s]||0)+1;const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3);if(top.length)O.push('Häufigste Symptome: '+top.map(([s,n])=>`${s} (${n}×)`).join(', ')+'.');
+ const pp=D.filter(d=>d.period&&d.period!=='keine'&&d.pain!=null),np=D.filter(d=>(!d.period||d.period==='keine')&&d.pain!=null);if(pp.length>=2&&np.length>=2)O.push(`Schmerz an Periodentagen im Schnitt ${fmt(+avg(pp.map(d=>d.pain)).toFixed(1))}, an anderen Tagen ${fmt(+avg(np.map(d=>d.pain)).toFixed(1))}.`);
+ return O}
+function vDiaryOverview(){const days=dayList(30),M=Object.fromEntries(S.diary.map(d=>[d.id,d]));const n=days.filter(d=>M[d]).length;
+ let h=`<h2>Verlauf (30 Tage)</h2>`;if(!S.diary.length)return h+'<div class="empty">Noch keine Einträge. Speichere deinen ersten Tag oben.</div>';
+ h+=`<div class="card"><div class="mt" style="margin-bottom:6px">Schmerz-Kalender · ${n} von 30 Tagen erfasst</div><div class="heat">${days.map(d=>`<button data-dgo="${d}" title="${fdate(d)}" style="background:${M[d]?painCol(M[d].pain):'#f0f0f3'}${d===dDate?';outline:2px solid var(--blue)':''}">${M[d]&&M[d].pain!=null?M[d].pain:''}</button>`).join('')}</div><div class="mt" style="display:flex;justify-content:space-between;margin-top:4px"><span>${fdate(days[0])}</span><span>heute</span></div></div>`;
+ const S5=[['pain','Schmerz',10,'var(--red)'],['well','Befinden',5,'var(--blue)'],['mood','Stimmung',5,'var(--pink)'],['energy','Energie',5,'var(--orange)'],['sleepq','Schlafqualität',5,'#7b5cd6'],['sleeph','Schlafdauer (Std.)',12,'#5a8dee'],['weight','Gewicht (kg)',null,'#555']];
+ h+='<div class="list">'+S5.map(([f,l,mx,col])=>{let vals=days.map(d=>M[d]?M[d][f]:null);const a=avg(vals);if(a==null)return'';let vv=vals;if(mx==null){const nn=vals.filter(x=>x!=null);const lo=Math.min(...nn)-1,hi=Math.max(...nn)+1;vv=vals.map(x=>x==null?null:x-lo);mx=hi-lo}
+  return `<div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><span class="nm">${l}</span><span class="mt">Ø ${fmt(+a.toFixed(1))}</span></div>${dspark(vv,mx,col)}</div>`}).join('')+'</div>';
+ const O=observations();if(O.length)h+=`<h3>Beobachtungen</h3><div class="card">${O.map(o=>`<p style="font-size:15px;margin:6px 0">• ${esc(o)}</p>`).join('')}<p class="mt">Nur Auffälligkeiten in deinen Einträgen – keine Diagnose, kein Beweis für Ursachen. Gerne mit der Ärztin besprechen.</p></div>`;
+ return h}
+function bindDiary(){const A=$('#app');if(tab!=='heute')return;const e=dTmp;
+ const keep=()=>{e.medtxt=$('#dmt').value;e.note=$('#dnote').value};const rr2=()=>{keep();const y=scrollY;render();scrollTo(0,y)};
+ A.querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>{const f=b.dataset.dm,v=b.dataset.v;let a=e[f];if(a.includes(v))a=a.filter(x=>x!==v);else{a=a.concat(v);if(f==='move')a=v==='keine'?['keine']:a.filter(x=>x!=='keine')}e[f]=a;rr2()});
+ A.querySelectorAll('[data-d1]').forEach(b=>b.onclick=()=>{const f=b.dataset.d1;let v=b.dataset.v;if(f==='night')v=v==='true';e[f]=e[f]===v?null:v;rr2()});
+ A.querySelectorAll('[data-d1n]').forEach(b=>b.onclick=()=>{const v=+b.dataset.v;e.pain=e.pain===v?null:v;rr2()});
+ A.querySelectorAll('[data-d5]').forEach(b=>b.onclick=()=>{const f=b.dataset.d5,v=+b.dataset.v;e[f]=e[f]===v?null:v;rr2()});
+ A.querySelectorAll('[data-ds]').forEach(b=>b.onclick=()=>{const f=b.dataset.ds,s=+b.dataset.v;let v=e[f];if(v==null)v=f==='sleeph'?7:f==='weight'?(curWeight()||65):0;else v=Math.round((v+s)*10)/10;if(v<0)v=0;e[f]=v;$('#ds_'+f).textContent=(f==='sleeph'||f==='weight')?fmt(v):v});
+ A.querySelectorAll('[data-dd]').forEach(b=>b.onclick=()=>{const x=new Date(dDate+'T12:00');x.setDate(x.getDate()+(+b.dataset.dd));const n=x.toISOString().slice(0,10);if(n>today())return;dDate=n;dTmp=null;render()});
+ A.querySelectorAll('[data-dgo]').forEach(b=>b.onclick=()=>{dDate=b.dataset.dgo;dTmp=null;render();scrollTo(0,0)});
+ $('#ddate').onchange=()=>{const v=$('#ddate').value;if(v&&v<=today()){dDate=v;dTmp=null;render()}};
+ $('#dmadd').onclick=async()=>{const t=$('#dmnew').value.trim();if(!t)return;keep();const l=medList();if(!l.includes(t))await put('meta',{id:'meds',list:l.concat(t)});if(!e.meds.includes(t))e.meds.push(t);await load();rr2()};
+ $('#dsave').onclick=async()=>{keep();const o={...e};delete o.example;await put('diary',o);await load();dTmp=null;toast('Tag gespeichert ✓');render()};
+ const dd=$('#ddel');if(dd)dd.onclick=async()=>{if(confirm('Eintrag vom '+fdate(dDate)+' löschen?')){await del('diary',dDate);await load();dTmp=null;render()}}}
+function diarySummary(){const D=S.diary.slice().sort((a,b)=>a.id<b.id?-1:1).filter(d=>d.id>=dayList(60)[0]);if(!D.length)return'';
+ let t='\n== SCHMERZ- & GESUNDHEITSTAGEBUCH (letzte 60 Tage, '+D.length+' Einträge) ==\nSkalen: Schmerz 0–10; Befinden/Stimmung/Energie/Schlaf/Verdauung 1–5 (5 = gut); Stress 1–5 (5 = hoch)\n';
+ for(const d of D){const p=[];if(d.pain!=null)p.push('Schmerz '+d.pain+(d.loc.length?' ('+d.loc.join(', ')+(d.art.length?'; '+d.art.join(', '):'')+')':''));
+  for(const [f,l] of [['well','Bef'],['mood','Stim'],['energy','Energie'],['stress','Stress'],['sleepq','Schlaf'],['digest','Verd']])if(d[f]!=null)p.push(l+' '+d[f]);
+  if(d.sleeph!=null)p.push(fmt(d.sleeph)+' h');if(d.sym.length)p.push('Sympt: '+d.sym.join(', '));if(d.period&&d.period!=='keine')p.push('Periode '+d.period);if(d.move.length)p.push('Bew: '+d.move.join(', '));
+  if(d.night)p.push('Nachtschicht');if(d.alc)p.push('Alk '+d.alc);if(d.caf)p.push('Koff '+d.caf);if(d.water)p.push('Wasser '+d.water);if(d.weight)p.push(fmt(d.weight)+' kg');
+  if(d.meds.length||d.medtxt)p.push('Mittel: '+d.meds.concat(d.medtxt?[d.medtxt]:[]).join(', '));if(d.note)p.push('Notiz: '+d.note.replace(/\n/g,' '));
+  t+='- '+fdate(d.id)+': '+p.join(' | ')+(d.example?' {BEISPIEL}':'')+'\n'}
+ const O=observations();if(O.length)t+='Beobachtungen (automatisch, keine Diagnose):\n'+O.map(o=>'  • '+o).join('\n')+'\n';return t}
+
+// ---------- Supplements (Platzhalter) & Mehr ----------
+function vSupp(){return `<h1>Supplements</h1><p class="sub">Meine Mittel</p><div class="card"><b>Kommt bald 💊</b><p style="font-size:15px;margin:6px 0">Hier entsteht deine Supplement-Übersicht: Packung scannen, Inhaltsstoffe zusammenrechnen, Höchstmengen prüfen und ein Einnahmeplan.</p><p class="mt">Bis dahin kannst du genommene Mittel im Tagebuch unter „Heute“ antippen.</p></div>`}
+function vMore(){const p=prof(),b=bmi(),a=age();
+ return `<h1>Mehr</h1><h3>Profil</h3><div class="list"><div class="row tap" data-act="profile"><div class="grow"><div class="nm">👤 ${SEXL[p.sex]}${a?' · '+a+' Jahre':''}</div><div class="mt">${p.height?fmt(p.height)+' cm':'Größe fehlt'} · ${curWeight()?fmt(curWeight())+' kg':'Gewicht fehlt'}${b?' · BMI '+fmt(+b.toFixed(1))+' ('+bmiTxt(b)+')':''}</div></div><span class="mt">›</span></div></div>
+ <h3>Ärztin</h3><div class="list"><div class="row tap" data-tab2="q"><div class="grow"><div class="nm">💬 Fragen an Ärzte</div><div class="mt">${S.questions.filter(x=>!x.done).length} offen</div></div><span class="mt">›</span></div>
+ <div class="row tap" data-act="dagmar"><div class="grow"><div class="nm">📋 Für Dagmar kopieren</div><div class="mt">Profil, Werte, Befunde & Tagebuch als Text</div></div></div></div>
+ <h3>Daten &amp; Sicherung</h3><div class="list">
+ <div class="row tap" data-act="export"><div class="grow"><div class="nm">⬇️ Backup exportieren (JSON)</div><div class="mt">inkl. Anhänge, Tagebuch & Profil</div></div></div>
+ <div class="row tap" data-act="import"><div class="grow"><div class="nm">⬆️ Backup importieren</div><div class="mt">ergänzt/überschreibt gleiche Einträge</div></div></div>
+ <div class="row tap" data-act="loadex"><div class="grow"><div class="nm">🧪 Beispieldaten laden</div><div class="mt">deutlich als „Beispiel“ markiert</div></div></div>
+ <div class="row tap" data-act="delex"><div class="grow"><div class="nm" style="color:var(--red)">Beispieldaten löschen</div></div></div>
+ <div class="row tap" data-act="delall"><div class="grow"><div class="nm" style="color:var(--red)">Alle Daten löschen</div></div></div></div>
+ <h3>Info</h3><div class="card" style="font-size:15px"><b>Wie funktionieren die Bereiche?</b>${RANGEINFO}</div>
+ <p class="hint">🔒 Alle Daten bleiben ausschließlich auf diesem Gerät (IndexedDB). Keine Server, kein Tracking. Tipp: regelmäßig ein Backup exportieren – wenn Safari die Website-Daten löscht, sind sonst auch die Daten weg.</p>
+ <p class="hint">⚠️ Diese App ersetzt keine medizinische Beratung.</p><input type="file" id="impf" accept="application/json,.json" style="display:none">`}
+
+function bodyCard(){const p=prof(),b=bmi(),w=S.diary.filter(x=>x.weight).sort((a,b)=>a.id<b.id?-1:1).slice(-60);
+ if(!p.height&&!w.length&&!p.weight)return `<div class="card tap" data-act="profile"><b>👤 Profil ergänzen</b><div class="mt">Geschlecht (${SEXL[p.sex]}), Geburtsjahr, Größe, Gewicht – für passende Bereiche und BMI ›</div></div>`;
+ return `<div class="card tap" data-act="profile"><div style="display:flex;justify-content:space-between"><b>⚖️ ${curWeight()?fmt(curWeight())+' kg':'Gewicht?'}</b><span>${b?'BMI <b>'+fmt(+b.toFixed(1))+'</b> · '+bmiTxt(b):'<span class="mt">Größe fehlt für BMI</span>'}</span></div>${w.length>=2?dspark(w.map(x=>x.weight-Math.min(...w.map(y=>y.weight))+1),Math.max(...w.map(y=>y.weight))-Math.min(...w.map(y=>y.weight))+2,'#555'):'<div class="mt">Tägliches Gewicht unter „Heute“ eintragen → Verlauf</div>'}<div class="mt">${SEXL[p.sex]}${age()?' · '+age()+' J.':''} · BMI ist nur ein grober Richtwert</div></div>`}
 // ---------- Sheet & Events ----------
 function openSheet(h){$('#sheet').innerHTML=h;$('#sheetbg').classList.add('open');$('#sheet').querySelectorAll('[data-act=close]').forEach(b=>b.onclick=closeSheet)}
 function closeSheet(){$('#sheetbg').classList.remove('open')}
 $('#sheetbg').onclick=e=>{if(e.target.id==='sheetbg')closeSheet()};
 function bind(){const A=$('#app');
  A.querySelectorAll('[data-marker]').forEach(e=>e.onclick=()=>{tab='vals';sub=e.dataset.marker;render();scrollTo(0,0)});
+ A.querySelectorAll('[data-info]').forEach(e=>e.onclick=ev=>{ev.preventDefault();infoSheet(S.values.find(v=>v.id===e.dataset.info))});
  A.querySelectorAll('[data-edit]').forEach(e=>e.onclick=()=>formValue(S.values.find(v=>v.id===e.dataset.edit)));
  A.querySelectorAll('[data-fedit]').forEach(e=>e.onclick=ev=>{if(ev.target.closest('[data-view]'))return;formFinding(S.findings.find(v=>v.id===e.dataset.fedit))});
  A.querySelectorAll('[data-view]').forEach(e=>e.onclick=()=>viewFile(S.findings.find(v=>v.id===e.dataset.view)));
  A.querySelectorAll('[data-seg]').forEach(e=>e.onclick=()=>{sub=e.dataset.seg;render()});
  A.querySelectorAll('[data-tab2]').forEach(e=>e.onclick=()=>{tab=e.dataset.tab2;sub=null;render();scrollTo(0,0)});
  const qs=$('#qs');if(qs)qs.oninput=()=>{q=qs.value;const p=qs.selectionStart;render();const n=$('#qs');n.focus();n.setSelectionRange(p,p)};
- A.querySelectorAll('[data-act]').forEach(e=>e.onclick=async()=>{const a=e.dataset.act;
+ A.querySelectorAll('[data-act]').forEach(e=>e.onclick=async(ev)=>{ev.preventDefault();const a=e.dataset.act;
   if(a==='back'){sub=null;render()}
+  if(a==='profile')formProfile();
+  if(a==='rinfo')openSheet(`<div class="sheet-h"><span></span><b>Bereiche</b><button class="lnk" data-act="close">Fertig</button></div><div class="card" style="font-size:15px">${RANGEINFO}</div>`);
   if(a==='addsame')formValue(null,e.dataset.name);
   if(a==='loadex')loadExample();
   if(a==='delex'&&confirm('Alle Beispieldaten löschen? Eigene Einträge bleiben erhalten.'))delExample();
-  if(a==='delall'&&confirm('Wirklich ALLE Daten löschen? Vorher Backup exportieren!')){for(const s of ['values','findings','questions'])for(const x of S[s])await del(s,x.id);await load();render()}
+  if(a==='delall'&&confirm('Wirklich ALLE Daten löschen? Vorher Backup exportieren!')){for(const s of ['values','findings','questions','diary','meta'])for(const x of S[s])await del(s,x.id);await load();render()}
   if(a==='export')doExport();
   if(a==='import')$('#impf').click();
   if(a==='dagmar')copy(summary());
