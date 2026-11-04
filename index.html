@@ -77,7 +77,7 @@ input[type=checkbox]{width:22px;height:22px;accent-color:#ee7fa8}
 textarea{resize:vertical}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}.chip{background:#fff;color:var(--tx);border:1.5px solid #f6dbe6;border-radius:22px;padding:9px 14px;font-size:15px;font-weight:700;min-height:42px}.chip.on{background:#fbd3e2;border-color:#f4a9c4;color:#c2507b}
 .stp{width:44px;height:44px;padding:0;font-size:22px;background:#ffe8f0;color:#e2729a;border-radius:22px;flex:none}
-.heat{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}.heat button{aspect-ratio:1;padding:0;border-radius:10px;font-size:11px;color:#6b4757;font-weight:800}
+.heat{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}.heat button{aspect-ratio:1;padding:0;border-radius:10px;font-size:11px;color:#6b4757;font-weight:800;position:relative}.heat .zt{position:absolute;left:0;right:0;bottom:1px;font-size:8px;font-weight:700;color:#9a7184;line-height:1}
 .wseg{position:sticky;top:0;z-index:4;background:linear-gradient(var(--bg) 80%,rgba(255,246,248,0));padding-top:calc(env(safe-area-inset-top) + 6px)}
 /* Heute */
 .hd{display:flex;align-items:flex-end;justify-content:space-between}
@@ -626,7 +626,8 @@ function tw(d){if(!d)return null;const p=v10(d,'pain');const a=avg([v10(d,'sleep
 const f1=n=>n==null?'–':(Math.round(n*10)/10).toFixed(1).replace('.',',');
 function twCol(t){return t==null?'#f6eef2':t>=7?'#bfe8cf':t>=4.5?'#ffe9b0':'#ffc9d3'}
 function twTxt(t,p){if(t==null)return'Wie geht es dir heute?';if(p!=null&&p>=7)return'Autsch – heute ist ein schwerer Tag. Sei lieb zu dir 🤍';if(t>=8)return'Was für ein schöner Tag! 💗';if(t>=6.5)return'Ein richtig guter Tag ✨';if(t>=5)return'Ein ganz okayer Tag.';if(t>=3)return'Heute ist nicht so leicht – du machst das gut.';return'Ein harter Tag. Gönn dir Ruhe & Wärme 🫶'}
-function cycDay(d){const s=prof().periodStart;if(!s)return null;const n=Math.round((new Date(d+'T12:00')-new Date(s+'T12:00'))/864e5)+1;return n>=1&&n<=90?n:null}
+function perStarts(){const isP=x=>(x.period&&x.period!=='keine')||(x.events||[]).includes('Periode');const P=new Set(S.diary.filter(isP).map(x=>x.id));const a=[...P].filter(id=>{const y=new Date(id+'T12:00');y.setDate(y.getDate()-1);return !P.has(ymd(y))});const ps=prof().periodStart;if(ps)a.push(ps);return a.sort()}
+function cycDay(d){const s=perStarts().filter(x=>x<=d).pop();if(!s)return null;const n=Math.round((new Date(d+'T12:00')-new Date(s+'T12:00'))/864e5)+1;return n>=1&&n<=90?n:null}
 // ---------- Kawaii-Figuren ----------
 function moodOf(k,v){if(k==='pain'){if(v==null)return'neu';return v>=7?'cry':v>=5?'sad':v>=3?'neu':'happy'}if(v==null)return'neu';return v>=6.5?'happy':v>=4?'neu':'sad'}
 function face(m,x,y,s,tired){const e=6*s,c='#5a3d4c';let eyes,mouth;
@@ -677,7 +678,7 @@ function observations(){const D=S.diary.slice().sort((a,b)=>a.id<b.id?-1:1),O=[]
  return O}
 function vDiaryOverview(){const days=dayList(30),M=Object.fromEntries(S.diary.map(d=>[d.id,d]));const n=days.filter(d=>M[d]).length;
  let h=`<h2>Verlauf</h2>`;if(!S.diary.length)return h+'<div class="empty">Noch keine Einträge – schieb einfach die Regler oben 💗</div>';
- return h+`<div class="card"><div class="mt" style="margin-bottom:8px;font-weight:700">Tageswert · ${n} von 30 Tagen erfasst</div><div class="heat">${days.map(d=>{const t=M[d]?tw(M[d]):null;return `<button data-dgo="${d}" title="${fdate(d)}" style="background:${M[d]?twCol(t):'#f9f1f4'}${d===dDate?';outline:2.5px solid #f27aa5':''}">${t!=null?Math.round(t):''}</button>`}).join('')}</div><div class="mt" style="display:flex;justify-content:space-between;margin-top:6px"><span>${fdate(days[0])}</span><span>heute</span></div><button class="btn2 full" data-tab2="ana">Details in der Auswertung →</button></div>`}
+ return h+`<div class="card"><div class="mt" style="margin-bottom:8px;font-weight:700">Tageswert · ${n} von 30 Tagen erfasst</div><div class="heat">${days.map(d=>{const t=M[d]?tw(M[d]):null;return `<button data-dgo="${d}" title="${fdate(d)}" style="background:${M[d]?twCol(t):'#f9f1f4'}${d===dDate?';outline:2.5px solid #f27aa5':''}">${t!=null?Math.round(t):''}${(z=>z?`<small class="zt">Z${z}</small>`:'')(cycDay(d))}</button>`}).join('')}</div><div class="mt" style="display:flex;justify-content:space-between;margin-top:6px"><span>${fdate(days[0])}</span><span>heute</span></div><button class="btn2 full" data-tab2="ana">Details in der Auswertung →</button></div>`}
 function diaryTrends(){const days=dayList(30),M=Object.fromEntries(S.diary.map(d=>[d.id,d]));if(!S.diary.length)return'';
  const S5=[['tw','Tageswert',10,'#ee7fa8'],['pain','Schmerz',10,'#f39aa9'],['sleep10','Ausgeschlafen',10,'#a993e3'],['mood10','Laune',10,'#f48fb1'],['energy10','Energie',10,'#eabc3c'],['sleeph','Schlafdauer (Std.)',12,'#8cb8ec'],['weight','Gewicht (kg)',null,'#b89aa8']];
  let h='<h2>Tagebuch (30 Tage)</h2><div class="list">'+S5.map(([f,l,mx,col])=>{let vals=days.map(d=>M[d]?(f==='tw'?tw(M[d]):f in OLD5||f==='pain'?v10(M[d],f):M[d][f]):null);const a=avg(vals);if(a==null)return'';let vv=vals;if(mx==null){const nn=vals.filter(x=>x!=null);const lo=Math.min(...nn)-1,hi=Math.max(...nn)+1;vv=vals.map(x=>x==null?null:x-lo);mx=hi-lo}
@@ -698,25 +699,23 @@ function bindDiary(){const A=$('#app');if(tab!=='heute')return;const e=dTmp;
  $('#ddate').onchange=()=>{const v=$('#ddate').value;if(v&&v<=calToday()){dDate=v;dTmp=null;render()}};
  $('#dplus').onclick=()=>extrasSheet();A.querySelectorAll('[data-act2=extras]').forEach(b=>b.onclick=()=>extrasSheet())}
 function bindDgo(){document.querySelectorAll('[data-dgo]').forEach(b=>b.onclick=()=>{dDate=b.dataset.dgo;dTmp=null;render();scrollTo(0,0)})}
-let xOpen=new Set(),xEvt=false;
-function extrasSheet(){const e=dTmp,p=prof();const has={pain:!!(e.loctxt||e.loc.length||e.art.length||e.arttxt),sleep:e.sleeph!=null,weight:e.weight!=null,cyc:!!p.periodStart,meds:!!(e.meds.length||e.medtxt)};for(const k in has)if(has[k])xOpen.add(k);
+let xOpen=new Set();
+function extrasSheet(){const e=dTmp,p=prof();const has={pain:!!(e.loctxt||e.loc.length||e.art.length||e.arttxt),evt:!!(e.events.length||e.note),sleep:e.sleeph!=null,weight:e.weight!=null,cyc:!!p.periodStart,meds:!!(e.meds.length||e.medtxt)};for(const k in has)if(has[k])xOpen.add(k);
  const chips=(f,opts)=>`<div class="chips">${opts.map(o=>`<button class="chip ${e[f].includes(o)?'on':''}" data-xm="${f}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
  const step=(f,lbl,st,unit)=>`<div style="display:flex;align-items:center;gap:10px"><div class="grow nm">${lbl}</div><button class="stp" data-xs="${f}" data-v="${-st}">−</button><div class="val" style="min-width:64px;text-align:center" id="xs_${f}">${e[f]==null?'–':fmt(e[f])+' '+unit}</div><button class="stp" data-xs="${f}" data-v="${st}">＋</button></div>`;
  const SEC={pain:['📍 Schmerz-Details',`<input class="tin" id="xloc" placeholder="Wo? z. B. Kreuz, Schläfe, Kiefer …" value="${esc(e.loctxt||e.loc.join(', '))}"><div class="mt" id="xlocr" style="margin:-4px 4px 10px">${e.loctxt||e.loc.length?'erkannt: '+esc(interpLoc(e.loctxt||e.loc.join(' ')).join(', ')):'Ich ordne den Ort automatisch zu.'}</div><div class="mt" style="margin:0 4px 6px;font-weight:700">Wie fühlt es sich an?</div>${chips('art',D_ART)}<input class="tin" id="xart" placeholder="Anders? Kurz beschreiben …" value="${esc(e.arttxt)}">`],
+  evt:['🌸 Besondere Ereignisse',`${chips('events',D_EVT)}<textarea class="tin" id="xnote" rows="2" placeholder="Notiz …">${esc(e.note)}</textarea>`],
   sleep:['🌙 Schlafstunden',step('sleeph','Geschlafen',0.5,'h')],
   weight:['⚖️ Gewicht',step('weight','Gewicht',0.1,'kg')],
   cyc:['🩷 Periode begann am',`<input type="date" class="tin" id="xcyc" value="${p.periodStart||''}" max="${calToday()}"><div class="mt" style="margin:0 4px">Daraus berechne ich den Zyklustag.</div>`],
   meds:['💊 Mittel genommen',`${chips('meds',medList())}<div style="display:flex;gap:8px"><input class="tin" id="xmnew" placeholder="Mittel zur Liste hinzufügen …"><button class="stp" id="xmadd" style="margin-top:2px">＋</button></div><input class="tin" id="xmt" placeholder="Weitere Mittel / Dosis" value="${esc(e.medtxt)}">`]};
- const nE=e.events.length+(e.note&&e.note.trim()?1:0);const EVT=`<div class="sec"><button class="lnk" id="xevt" style="display:flex;width:100%;justify-content:space-between;font-size:16px;font-weight:800;padding:2px 0" aria-expanded="${xEvt}"><span>🌸 Sonstiges${nE?' <span class="mt">('+nE+')</span>':''}</span><span>${xEvt?'▾':'▸'}</span></button>${xEvt?`<div style="margin-top:10px">${chips('events',D_EVT)}<textarea class="tin" id="xnote" rows="2" placeholder="Notiz …">${esc(e.note)}</textarea></div>`:''}</div>`;
  const open=[...Object.keys(SEC)].filter(k=>xOpen.has(k)),closed=Object.keys(SEC).filter(k=>!xOpen.has(k));
  openSheet(`<div class="sheet-h"><span style="width:60px"></span><b>Ereignis / Notiz</b><button class="lnk" data-act="close" id="xdone">Fertig</button></div>
  ${open.map(k=>`<div class="sec"><b>${SEC[k][0]}</b>${SEC[k][1]}</div>`).join('')}
- ${EVT}
  ${closed.length?`<h3>Hinzufügen</h3><div class="addb">${closed.map(k=>`<button data-xadd="${k}">+ ${SEC[k][0]}</button>`).join('')}</div>`:''}
  ${S.diary.some(x=>x.id===dDate)?'<button class="btnd full" id="xdel" style="margin-top:22px">Eintrag dieses Tages löschen</button>':''}`);
  const Sh=$('#sheet'),keep=()=>{const g=id=>Sh.querySelector('#'+id);if(g('xloc')){e.loctxt=g('xloc').value.trim();e.loc=e.loctxt?interpLoc(e.loctxt):[]}if(g('xart'))e.arttxt=g('xart').value.trim();if(g('xnote'))e.note=g('xnote').value;if(g('xmt'))e.medtxt=g('xmt').value};
  const re=()=>{keep();const y=Sh.scrollTop;closeSheet.cb=null;extrasSheet();$('#sheet').scrollTop=y};
- $('#xevt').onclick=()=>{xEvt=!xEvt;re()};
  Sh.querySelectorAll('[data-xadd]').forEach(b=>b.onclick=()=>{xOpen.add(b.dataset.xadd);re()});
  Sh.querySelectorAll('[data-xm]').forEach(b=>b.onclick=()=>{const f=b.dataset.xm,v=b.dataset.v;e[f]=e[f].includes(v)?e[f].filter(x=>x!==v):e[f].concat(v);b.classList.toggle('on',e[f].includes(v));dDirty=true});
  Sh.querySelectorAll('[data-xs]').forEach(b=>b.onclick=()=>{const f=b.dataset.xs,s=+b.dataset.v;let v=e[f];if(v==null)v=f==='sleeph'?7:(curWeight()||65);else v=Math.round((v+s)*10)/10;if(v<0)v=0;e[f]=v;$('#xs_'+f).textContent=fmt(v)+(f==='sleeph'?' h':' kg');dDirty=true});
